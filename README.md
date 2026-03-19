@@ -1,27 +1,32 @@
 # Oxycash — Flet/Python
 
-Budget tracker mensuel. Port fidèle de la version HTML.
+Monthly budget tracker.
 
 ## Stack
-- **Flet** (Flutter + Python) — UI cross-platform
-- **WebDAV** (Nextcloud / kDrive) — sync primaire
-- **Fallback local** — `~/.oxycash/oxycash.json`
+
+- Flet (Flutter + Python) — cross-platform UI
+
+- WebDAV (Nextcloud / kDrive) — primary sync
+
+- Local fallback — ~/.oxycash/oxycash.json
 
 ## Structure
 ```
 oxycash/
-├── main.py              # entry point Flet
+├── main.py              # Flet entry point
 ├── core/
-│   ├── model.py         # dataclasses + logique métier
+│   ├── model.py         # dataclasses + business logic
 │   ├── storage.py       # WebDAV + local JSON
-│   └── theme.py         # palette dark/light
+│   └── theme.py         # dark/light theme
 ├── views/
-│   ├── month_view.py    # page mensuelle (sections, payments)
-│   └── special_views.py # Dettes, Épargne, Frais, Viabilité, Config
+│   ├── month_view.py    # monthly page (sections, payments)
+│   └── special_views.py # Debts, Savings, Expenses, Viability, Settings
 └── pyproject.toml
+└── requirements.txt
+
 ```
 
-## Lancer en dev
+## Run in development
 
 ```bash
 pip install flet
@@ -45,32 +50,28 @@ flet build linux --project oxycash
 
 ## Build Android (APK)
 
-Nécessite Flutter SDK + Android SDK installés.
+Requires Flutter SDK + Android SDK installed.
 
 ```bash
 flet build apk --project oxycash
 # → build/apk/oxycash.apk
 ```
 
-Pour debug sur device branché :
-```bash
-flet run main.py --android
-```
 
-## Données
+## Data
 
-| Plateforme | Emplacement local |
+| Platforme | Local save |
 |---|---|
 | Linux / Windows | `~/.oxycash/oxycash.json` |
-| Android | app private storage (géré par Flet) |
+| Android | app private storage (managed by Flet) |
 
-Config WebDAV stockée dans `~/.oxycash/config.json`.
+Config WebDAV is saved in `~/.oxycash/config.json`.
 
-## WebDAV Nextcloud / kDrive
+## WebDAV
 
-Dans l'onglet ⚙️ Config :
-- **URL** : `https://xxx.nl.tab.digital/remote.php/dav/files/user/Oxy/`
-- **Utilisateur** : ton email Nextcloud
-- **Mot de passe** : app password recommandé
+In the ⚙️ Settings tab fill the folowing fields:
+- **URL** : 
+- **User** : 
+- **Password** :
 
-Le fichier `oxycash.json` est lu/écrit via HTTP PUT/GET — même logique que la version HTML.
+The oxycash.json file is read/written via HTTP PUT/GET.
