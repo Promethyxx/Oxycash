@@ -1,0 +1,136 @@
+// oxycash-rs - ui/debts_view.slint
+// Port of build_dettes_view() in special_views.py
+
+import { Palette } from "palette.slint";
+
+export struct DebtItem {
+    rep: string,
+    creditor: string,
+    pursuit: string,
+    balance: float,
+    balance-ok: float,
+    status: string,
+    date: string,
+}
+
+export component DebtsView inherits Flickable {
+    in property <string>     currency:     "CHF";
+    in property <string>     total-due:    "0";
+    in property <string>     total-neg:    "0";
+    in property <int>        settled:      0;
+    in property <[DebtItem]> debts:        [];
+
+    callback add-debt();
+    callback delete-debt(int);
+    callback save-requested();
+
+    viewport-height: 600px;
+
+    VerticalLayout {
+        padding: 14px;
+        spacing: 10px;
+
+        Text {
+            text: "Debts";
+            font-size: 20px;
+            font-weight: 700;
+            color: Palette.text;
+        }
+
+        // Summary
+        Rectangle {
+            border-radius: 10px;
+            background: Palette.card;
+            border-width: 1px;
+            border-color: Palette.card-border;
+            height: 64px;
+
+            HorizontalLayout {
+                padding: 14px;
+                spacing: 8px;
+
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+                    Text { text: "Total due";       font-size: 9px;  font-weight: 600; color: Palette.text3; }
+                    Text { text: total-due + " " + currency; font-size: 16px; font-weight: 700; color: Palette.danger; }
+                }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+                    Text { text: "Negotiated";      font-size: 9px;  font-weight: 600; color: Palette.text3; }
+                    Text { text: total-neg + " " + currency; font-size: 16px; font-weight: 700; color: Palette.green; }
+                }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+                    Text { text: "Settled";         font-size: 9px;  font-weight: 600; color: Palette.text3; }
+                    Text { text: settled;            font-size: 16px; font-weight: 700; color: Palette.teal; }
+                }
+            }
+        }
+
+        // Debt list
+        for debt[i] in debts : Rectangle {
+            border-radius: 10px;
+            background: Palette.card;
+            border-width: 1px;
+            border-color: Palette.card-border;
+
+            VerticalLayout {
+                padding: 12px;
+                spacing: 6px;
+
+                HorizontalLayout {
+                    spacing: 8px;
+
+                    Text {
+                        text: debt.creditor;
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: Palette.text;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: debt.balance + " " + currency;
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: Palette.danger;
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 12px;
+
+                    Text { text: "Rep: " + debt.rep;       font-size: 11px; color: Palette.text2; }
+                    Text { text: "Neg: " + debt.balance-ok + " " + currency; font-size: 11px; color: Palette.green; }
+                }
+
+                if debt.status != "" : Text {
+                    text: debt.status;
+                    font-size: 11px;
+                    color: Palette.text3;
+                }
+            }
+        }
+
+        // Add button
+        Rectangle {
+            height: 42px;
+            border-radius: 10px;
+            background: transparent;
+            border-width: 1px;
+            border-color: Palette.card-border;
+            TouchArea { clicked => { root.add-debt(); } }
+            Text {
+                text: "+ Add debt";
+                font-size: 12px;
+                font-weight: 600;
+                color: Palette.text3;
+                horizontal-alignment: center;
+            }
+        }
+
+        Rectangle { height: 40px; }
+    }
+}

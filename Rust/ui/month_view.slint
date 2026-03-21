@@ -1,0 +1,786 @@
+// oxycash-rs - ui/month_view.slint
+// UI inspired by Oxycash.html
+
+import { Palette } from "palette.slint";
+
+export struct LineItem {
+    name:   string,
+    banque: float,
+    cash:   float,
+    etat:   float,
+    solde:  float,
+    idx:    int,
+}
+
+export struct PaymentItem {
+    date:   string,
+    amount: float,
+    idx:    int,
+}
+
+// --- Summary card (mirrors .summary-card in HTML)
+component SummaryCard inherits Rectangle {
+    in property <string> label;
+    in property <string> row1-label: "Bank";
+    in property <string> row1-val;
+    in property <string> row2-label: "Cash";
+    in property <string> row2-val;
+    in property <string> total;
+    in property <color>  total-color;
+    in property <bool>   big: false;
+
+    border-radius: 12px;
+    background: Palette.card;
+    border-width: 1px;
+    border-color: Palette.card-border;
+    horizontal-stretch: 1;
+    height: big ? 110px : 100px;
+
+    VerticalLayout {
+        padding: 14px;
+        spacing: 0px;
+
+        Text {
+            text: label;
+            font-size: 9px;
+            font-weight: 600;
+            color: Palette.text3;
+            letter-spacing: 1px;
+        }
+
+        Rectangle { height: 4px; }
+
+        HorizontalLayout {
+            alignment: space-between;
+            height: 20px;
+            Text { text: row1-label; font-size: 11px; color: Palette.text2; vertical-alignment: center; }
+            Text { text: row1-val;   font-size: 12px; font-weight: 700; color: Palette.text; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            alignment: space-between;
+            height: 20px;
+            Text { text: row2-label; font-size: 11px; color: Palette.text2; vertical-alignment: center; }
+            Text { text: row2-val;   font-size: 12px; font-weight: 700; color: Palette.text; vertical-alignment: center; }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.card-border;
+            
+            
+        }
+
+        HorizontalLayout {
+            alignment: space-between;
+            height: 28px;
+            Text {
+                text: "Total";
+                font-size: 11px;
+                font-weight: 600;
+                color: Palette.text2;
+                vertical-alignment: center;
+            }
+            Text {
+                text: total;
+                font-size: big ? 22px : 13px;
+                font-weight: 700;
+                color: total-color;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+            }
+        }
+    }
+}
+
+// --- Bar chart column
+component BarCol inherits Rectangle {
+    in property <string> label;
+    in property <string> val-str;
+    in property <float>  budget-pct;
+    in property <float>  paid-pct;
+    in property <color>  bar-color;
+
+    horizontal-stretch: 1;
+    background: transparent;
+
+    VerticalLayout {
+        alignment: end;
+        spacing: 3px;
+
+        Text {
+            text: val-str;
+            font-size: 8px;
+            font-weight: 600;
+            color: bar-color;
+            horizontal-alignment: center;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+            spacing: 2px;
+            height: 80px;
+
+            // Budget bar (faded)
+            Rectangle {
+                width: 16px;
+                vertical-stretch: 0;
+                height: clamp(2px, budget-pct * 80px, 80px);
+                border-radius: 3px;
+                background: bar-color.with-alpha(0.3);
+                y: 80px - self.height;
+            }
+            // Paid bar
+            Rectangle {
+                width: 16px;
+                vertical-stretch: 0;
+                height: clamp(2px, paid-pct * 80px, 80px);
+                border-radius: 3px;
+                background: bar-color;
+                y: 80px - self.height;
+            }
+        }
+
+        Text {
+            text: label;
+            font-size: 8px;
+            color: Palette.text3;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+// --- Payment row in sub-panel
+component PayRow inherits Rectangle {
+    in property <string> date;
+    in property <string> amount-str;
+    in property <bool>   positive;
+    in property <int>    idx;
+    callback delete-clicked(int);
+
+    height: 30px;
+    background: transparent;
+
+    HorizontalLayout {
+        spacing: 8px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+
+        Text {
+            text: date;
+            font-size: 10px;
+            color: Palette.text3;
+            vertical-alignment: center;
+            width: 72px;
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Text {
+            text: amount-str;
+            font-size: 11px;
+            font-weight: 600;
+            color: positive ? Palette.green : Palette.danger;
+            vertical-alignment: center;
+        }
+        Rectangle {
+            width: 28px;
+            height: 24px;
+            border-radius: 4px;
+            background: transparent;
+            TouchArea { clicked => { root.delete-clicked(idx); } }
+            Text {
+                text: "x";
+                font-size: 11px;
+                color: Palette.danger;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// --- Sub-panel (mirrors .sub-panel in HTML)
+component SubPanel inherits Rectangle {
+    in property <[PaymentItem]> payments;
+    in property <string>        currency;
+    in property <int>           sec-idx;
+    in property <int>           line-idx;
+    in-out property <string>    new-date;
+    in-out property <string>    new-amount;
+
+    callback delete-pay(int, int, int);
+    callback add-pay(int, int, string, string);
+
+    background: Palette.card;
+    border-width: 1px;
+    border-color: Palette.card-border;
+    border-radius: 0px;
+
+    VerticalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 8px;
+        padding-bottom: 10px;
+        spacing: 0px;
+
+        if payments.length == 0 : Text {
+            text: "No payments";
+            font-size: 10px;
+            color: Palette.text3;
+            horizontal-alignment: center;
+            height: 28px;
+            vertical-alignment: center;
+        }
+
+        for pay in payments : PayRow {
+            date:       pay.date;
+            amount-str: pay.amount + " " + currency;
+            positive:   pay.amount >= 0.0;
+            idx:        pay.idx;
+            delete-clicked(i) => { root.delete-pay(sec-idx, line-idx, i); }
+        }
+
+        Rectangle { height: 1px; background: Palette.card-border;   }
+
+        // Add payment form
+        HorizontalLayout {
+            spacing: 6px;
+            height: 30px;
+
+            Rectangle {
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                width: 100px;
+                TextInput {
+                    text <=> new-date;
+                    font-size: 11px;
+                    color: Palette.text;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+
+            Rectangle {
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                horizontal-stretch: 1;
+                TextInput {
+                    text <=> new-amount;
+                    font-size: 12px;
+                    color: Palette.teal;
+                    horizontal-alignment: right;
+                    input-type: decimal;
+                    vertical-alignment: center;
+                }
+            }
+
+            Rectangle {
+                width: 36px;
+                border-radius: 6px;
+                background: Palette.teal;
+                TouchArea {
+                    clicked => {
+                        root.add-pay(sec-idx, line-idx, new-date, new-amount);
+                        new-amount = "";
+                    }
+                }
+                Text {
+                    text: "+";
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #1a1a1a;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+// --- Line item (mirrors .line-item in HTML)
+component LineRow inherits Rectangle {
+    in property <LineItem>      line;
+    in property <string>        currency;
+    in property <bool>          expanded;
+    in property <[PaymentItem]> payments;
+    in property <int>           sec-idx;
+    in property <color>         accent;
+    in-out property <string>    new-date;
+    in-out property <string>    new-amount;
+
+    callback toggle(int);
+    callback update-banque(int, int, string);
+    callback update-cash(int, int, string);
+    callback update-name(int, int, string);
+    callback delete-line(int, int);
+    callback delete-pay(int, int, int);
+    callback add-pay(int, int, string, string);
+
+    background: transparent;
+
+    VerticalLayout {
+        spacing: 0px;
+
+        // Line header
+        Rectangle {
+            height: 42px;
+            border-radius: expanded ? 0px : 10px;
+            background: Palette.card;
+            border-width: 1px;
+            border-color: expanded ? Palette.gold : Palette.card-border;
+
+            TouchArea { clicked => { root.toggle(line.idx); } }
+
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 8px;
+                spacing: 4px;
+
+                // Name
+                TextInput {
+                    text: line.name;
+                    font-size: 11px;
+                    font-weight: 500;
+                    color: Palette.text;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                    accepted => { root.update-name(sec-idx, line.idx, self.text); }
+                }
+
+                // Banque input
+                Rectangle {
+                    width: 58px;
+                    height: 28px;
+                    border-radius: 5px;
+                    border-width: 1px;
+                    border-color: Palette.card-border;
+                    background: #00000030;
+                    TextInput {
+                        text: line.banque;
+                        font-size: 11px;
+                        color: Palette.blue;
+                        horizontal-alignment: right;
+                        input-type: decimal;
+                        vertical-alignment: center;
+                        accepted => { root.update-banque(sec-idx, line.idx, self.text); }
+                    }
+                }
+
+                // Cash input
+                Rectangle {
+                    width: 58px;
+                    height: 28px;
+                    border-radius: 5px;
+                    border-width: 1px;
+                    border-color: Palette.card-border;
+                    background: #00000030;
+                    TextInput {
+                        text: line.cash;
+                        font-size: 11px;
+                        color: Palette.amber;
+                        horizontal-alignment: right;
+                        input-type: decimal;
+                        vertical-alignment: center;
+                        accepted => { root.update-cash(sec-idx, line.idx, self.text); }
+                    }
+                }
+
+                // Etat (readonly)
+                Rectangle {
+                    width: 58px;
+                    height: 28px;
+                    border-radius: 5px;
+                    border-width: 0px;
+                    background: transparent;
+                    Text {
+                        text: line.etat;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: Palette.teal;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                }
+
+                // Solde (readonly)
+                Rectangle {
+                    width: 52px;
+                    height: 28px;
+                    background: transparent;
+                    Text {
+                        text: line.solde;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: line.solde <= 0.01 ? Palette.green : Palette.danger;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                }
+
+                // Delete button
+                Rectangle {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 4px;
+                    background: transparent;
+                    TouchArea { clicked => { root.delete-line(sec-idx, line.idx); } }
+                    Text {
+                        text: "x";
+                        font-size: 10px;
+                        color: Palette.danger;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        // Sub-panel
+        if expanded : SubPanel {
+            payments:   payments;
+            currency:   currency;
+            sec-idx:    sec-idx;
+            line-idx:   line.idx;
+            new-date   <=> new-date;
+            new-amount <=> new-amount;
+            delete-pay(s, l, i) => { root.delete-pay(s, l, i); }
+            add-pay(s, l, d, a) => { root.add-pay(s, l, d, a); }
+        }
+    }
+}
+
+// --- Section (mirrors .section in HTML)
+component Section inherits Rectangle {
+    in property <string>      title;
+    in property <string>      icon;
+    in property <color>       accent;
+    in property <string>      total-str;
+    in property <string>      currency;
+    in property <bool>        open;
+    in property <[LineItem]>  lines;
+    in property <int>         sec-idx;
+    in property <[bool]>      expanded-lines;
+    in property <[[PaymentItem]]> all-payments;
+
+    callback toggle-section(int);
+    callback toggle-line(int, int);
+    callback update-banque(int, int, string);
+    callback update-cash(int, int, string);
+    callback update-name(int, int, string);
+    callback delete-line(int, int);
+    callback add-line(int);
+    callback delete-pay(int, int, int);
+    callback add-pay(int, int, string, string);
+
+    background: transparent;
+
+    VerticalLayout {
+        spacing: 4px;
+
+        // Section header (mirrors .section-header)
+        Rectangle {
+            height: 40px;
+            background: transparent;
+            TouchArea { clicked => { root.toggle-section(sec-idx); } }
+
+            HorizontalLayout {
+                spacing: 8px;
+                padding-top: 10px;
+                padding-bottom: 6px;
+
+                Text { text: icon;  font-size: 14px; vertical-alignment: center; width: 20px; }
+                Text {
+                    text: title;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: Palette.text;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: total-str + " " + currency;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: accent;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: open ? "v" : ">";
+                    font-size: 10px;
+                    color: Palette.text3;
+                    vertical-alignment: center;
+                    width: 14px;
+                }
+            }
+        }
+
+        if open : VerticalLayout {
+            spacing: 4px;
+
+            // Column legend
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 8px;
+                spacing: 4px;
+                height: 18px;
+
+                Rectangle { horizontal-stretch: 1; }
+                Text { text: "BANK"; font-size: 8px; font-weight: 600; color: Palette.blue;  width: 58px; horizontal-alignment: center; }
+                Text { text: "CASH"; font-size: 8px; font-weight: 600; color: Palette.amber; width: 58px; horizontal-alignment: center; }
+                Text { text: "PAID"; font-size: 8px; font-weight: 600; color: Palette.teal;  width: 58px; horizontal-alignment: center; }
+                Text { text: "LEFT"; font-size: 8px; font-weight: 600; color: Palette.gold;  width: 52px; horizontal-alignment: center; }
+                Rectangle { width: 28px; }
+            }
+
+            for line[i] in lines : LineRow {
+                line:       line;
+                currency:   currency;
+                expanded:   expanded-lines[i];
+                payments:   all-payments[i];
+                sec-idx:    sec-idx;
+                accent:     accent;
+                toggle(idx)              => { root.toggle-line(sec-idx, idx); }
+                update-banque(s, l, v)   => { root.update-banque(s, l, v); }
+                update-cash(s, l, v)     => { root.update-cash(s, l, v); }
+                update-name(s, l, v)     => { root.update-name(s, l, v); }
+                delete-line(s, l)        => { root.delete-line(s, l); }
+                delete-pay(s, l, i)      => { root.delete-pay(s, l, i); }
+                add-pay(s, l, d, a)      => { root.add-pay(s, l, d, a); }
+            }
+
+            // Add row (mirrors .add-row)
+            Rectangle {
+                height: 38px;
+                border-radius: 10px;
+                background: transparent;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                TouchArea { clicked => { root.add-line(sec-idx); } }
+                HorizontalLayout {
+                    padding-left: 12px;
+                    spacing: 8px;
+                    Text { text: "+"; font-size: 13px; color: Palette.text3; vertical-alignment: center; }
+                    Text { text: "Add entry"; font-size: 11px; color: Palette.text3; vertical-alignment: center; }
+                }
+            }
+        }
+    }
+}
+
+// --- Main month view
+export component MonthView inherits Flickable {
+    in property <string>  month-name;
+    in property <string>  currency: "CHF";
+
+    // Summary data
+    in property <string>  sum-income:     "0"; in property <string>  sum-income-b:  "0"; in property <string>  sum-income-c:  "0"; in property <color>  sum-income-col:  #7BC47F;
+    in property <string>  sum-paid:       "0"; in property <string>  sum-paid-b:    "0"; in property <string>  sum-paid-c:    "0";
+    in property <string>  sum-topay:      "0"; in property <string>  sum-topay-b:   "0"; in property <string>  sum-topay-c:   "0";
+    in property <string>  sum-forecast:   "0"; in property <string>  sum-forecast-b:"0"; in property <string>  sum-forecast-c:"0"; in property <color>  sum-forecast-col:#7BC47F;
+    in property <string>  sum-balance:    "0"; in property <string>  sum-balance-b: "0"; in property <string>  sum-balance-c: "0"; in property <color>  sum-balance-col: #7BC47F;
+    in property <string>  sum-withdrawals:"0";
+
+    // Bar chart data
+    in property <float>   chart-ret-budget: 0.0; in property <float> chart-ret-paid: 0.0;
+    in property <float>   chart-fix-budget: 0.0; in property <float> chart-fix-paid: 0.0;
+    in property <float>   chart-var-budget: 0.0; in property <float> chart-var-paid: 0.0;
+    in property <float>   chart-max:        1.0;
+
+    // Sections
+    in property <[bool]>           sections-open;
+    in property <[LineItem]>       sec0-lines; in property <[LineItem]>  sec1-lines; in property <[LineItem]>  sec2-lines; in property <[LineItem]>  sec3-lines;
+    in property <[bool]>           sec0-expanded; in property <[bool]>   sec1-expanded; in property <[bool]>   sec2-expanded; in property <[bool]>   sec3-expanded;
+    in property <[[PaymentItem]]>  sec0-payments; in property <[[PaymentItem]]> sec1-payments; in property <[[PaymentItem]]> sec2-payments; in property <[[PaymentItem]]> sec3-payments;
+
+    callback save-requested();
+    callback toggle-section(int);
+    callback toggle-line(int, int);
+    callback update-banque(int, int, string);
+    callback update-cash(int, int, string);
+    callback update-name(int, int, string);
+    callback delete-line(int, int);
+    callback add-line(int);
+    callback delete-pay(int, int, int);
+    callback add-pay(int, int, string, string);
+
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 8px;
+
+        // Month title
+        Text {
+            text: month-name;
+            font-size: 22px;
+            font-weight: 700;
+            color: Palette.text;
+        }
+
+        // Summary grid — 3 rows of 2 cards
+        HorizontalLayout {
+            spacing: 8px;
+            SummaryCard {
+                label: "INCOME";
+                row1-label: "Bank"; row1-val: sum-income-b;
+                row2-label: "Cash"; row2-val: sum-income-c;
+                total: sum-income; total-color: sum-income-col;
+            }
+            SummaryCard {
+                label: "WITHDRAWALS";
+                row1-label: "To withdraw"; row1-val: sum-withdrawals;
+                row2-label: "Withdrawn";   row2-val: "0";
+                total: sum-withdrawals; total-color: Palette.text;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            SummaryCard {
+                label: "PAID";
+                row1-label: "Bank"; row1-val: sum-paid-b;
+                row2-label: "Cash"; row2-val: sum-paid-c;
+                total: sum-paid; total-color: Palette.teal;
+            }
+            SummaryCard {
+                label: "TO PAY";
+                row1-label: "Bank"; row1-val: sum-topay-b;
+                row2-label: "Cash"; row2-val: sum-topay-c;
+                total: sum-topay; total-color: Palette.amber;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            SummaryCard {
+                label: "FORECAST";
+                row1-label: "Bank"; row1-val: sum-forecast-b;
+                row2-label: "Cash"; row2-val: sum-forecast-c;
+                total: sum-forecast; total-color: sum-forecast-col;
+                big: true;
+            }
+            SummaryCard {
+                label: "BALANCE";
+                row1-label: "Bank"; row1-val: sum-balance-b;
+                row2-label: "Cash"; row2-val: sum-balance-c;
+                total: sum-balance; total-color: sum-balance-col;
+                big: true;
+            }
+        }
+
+        // Bar chart (mirrors .chart-container)
+        Rectangle {
+            border-radius: 12px;
+            background: Palette.card;
+            border-width: 1px;
+            border-color: Palette.card-border;
+            height: 140px;
+
+            VerticalLayout {
+                padding: 14px;
+                spacing: 6px;
+
+                Text {
+                    text: "BUDGET VS PAID";
+                    font-size: 9px;
+                    font-weight: 600;
+                    color: Palette.text3;
+                    letter-spacing: 1px;
+                }
+
+                HorizontalLayout {
+                    spacing: 4px;
+                    alignment: space-around;
+
+                    BarCol {
+                        label: "Withdrawals";
+                        val-str: sum-withdrawals;
+                        budget-pct: chart-max > 0.0 ? chart-ret-budget / chart-max : 0.0;
+                        paid-pct:   chart-max > 0.0 ? chart-ret-paid   / chart-max : 0.0;
+                        bar-color: Palette.teal;
+                    }
+                    BarCol {
+                        label: "Fixed";
+                        val-str: sum-topay-b;
+                        budget-pct: chart-max > 0.0 ? chart-fix-budget / chart-max : 0.0;
+                        paid-pct:   chart-max > 0.0 ? chart-fix-paid   / chart-max : 0.0;
+                        bar-color: Palette.gold;
+                    }
+                    BarCol {
+                        label: "Variable";
+                        val-str: sum-topay-c;
+                        budget-pct: chart-max > 0.0 ? chart-var-budget / chart-max : 0.0;
+                        paid-pct:   chart-max > 0.0 ? chart-var-paid   / chart-max : 0.0;
+                        bar-color: Palette.danger;
+                    }
+                }
+            }
+        }
+
+        // Sections
+        Section {
+            title: "Income"; icon: "💰"; accent: Palette.green;
+            total-str: sum-income; currency: currency;
+            open: sections-open[0]; lines: sec0-lines; sec-idx: 0;
+            expanded-lines: sec0-expanded; all-payments: sec0-payments;
+            toggle-section(i)      => { root.toggle-section(i); }
+            toggle-line(s,l)       => { root.toggle-line(s,l); }
+            update-banque(s,l,v)   => { root.update-banque(s,l,v); }
+            update-cash(s,l,v)     => { root.update-cash(s,l,v); }
+            update-name(s,l,v)     => { root.update-name(s,l,v); }
+            delete-line(s,l)       => { root.delete-line(s,l); }
+            add-line(i)            => { root.add-line(i); }
+            delete-pay(s,l,i)      => { root.delete-pay(s,l,i); }
+            add-pay(s,l,d,a)       => { root.add-pay(s,l,d,a); }
+        }
+
+        Section {
+            title: "Withdrawals"; icon: "🏧"; accent: Palette.amber;
+            total-str: sum-withdrawals; currency: currency;
+            open: sections-open[1]; lines: sec1-lines; sec-idx: 1;
+            expanded-lines: sec1-expanded; all-payments: sec1-payments;
+            toggle-section(i)      => { root.toggle-section(i); }
+            toggle-line(s,l)       => { root.toggle-line(s,l); }
+            update-banque(s,l,v)   => { root.update-banque(s,l,v); }
+            update-cash(s,l,v)     => { root.update-cash(s,l,v); }
+            update-name(s,l,v)     => { root.update-name(s,l,v); }
+            delete-line(s,l)       => { root.delete-line(s,l); }
+            add-line(i)            => { root.add-line(i); }
+            delete-pay(s,l,i)      => { root.delete-pay(s,l,i); }
+            add-pay(s,l,d,a)       => { root.add-pay(s,l,d,a); }
+        }
+
+        Section {
+            title: "Fixed"; icon: "📋"; accent: Palette.blue;
+            total-str: sum-topay-b; currency: currency;
+            open: sections-open[2]; lines: sec2-lines; sec-idx: 2;
+            expanded-lines: sec2-expanded; all-payments: sec2-payments;
+            toggle-section(i)      => { root.toggle-section(i); }
+            toggle-line(s,l)       => { root.toggle-line(s,l); }
+            update-banque(s,l,v)   => { root.update-banque(s,l,v); }
+            update-cash(s,l,v)     => { root.update-cash(s,l,v); }
+            update-name(s,l,v)     => { root.update-name(s,l,v); }
+            delete-line(s,l)       => { root.delete-line(s,l); }
+            add-line(i)            => { root.add-line(i); }
+            delete-pay(s,l,i)      => { root.delete-pay(s,l,i); }
+            add-pay(s,l,d,a)       => { root.add-pay(s,l,d,a); }
+        }
+
+        Section {
+            title: "Variable"; icon: "🛒"; accent: Palette.gold;
+            total-str: sum-topay-c; currency: currency;
+            open: sections-open[3]; lines: sec3-lines; sec-idx: 3;
+            expanded-lines: sec3-expanded; all-payments: sec3-payments;
+            toggle-section(i)      => { root.toggle-section(i); }
+            toggle-line(s,l)       => { root.toggle-line(s,l); }
+            update-banque(s,l,v)   => { root.update-banque(s,l,v); }
+            update-cash(s,l,v)     => { root.update-cash(s,l,v); }
+            update-name(s,l,v)     => { root.update-name(s,l,v); }
+            delete-line(s,l)       => { root.delete-line(s,l); }
+            add-line(i)            => { root.add-line(i); }
+            delete-pay(s,l,i)      => { root.delete-pay(s,l,i); }
+            add-pay(s,l,d,a)       => { root.add-pay(s,l,d,a); }
+        }
+
+        Rectangle { height: 40px; }
+    }
+}

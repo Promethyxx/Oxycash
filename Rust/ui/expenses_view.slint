@@ -1,0 +1,139 @@
+// oxycash-rs - ui/expenses_view.slint
+// Port of build_frais_view() in special_views.py
+// Annual expenses table: Fixed / Occasional / Withdrawals
+
+import { Palette } from "palette.slint";
+
+export struct ExpenseLine {
+    name:   string,
+    m0:  float, m1:  float, m2:  float, m3:  float,
+    m4:  float, m5:  float, m6:  float, m7:  float,
+    m8:  float, m9:  float, m10: float, m11: float,
+    total: float,
+}
+
+export struct ExpenseSection {
+    label:  string,
+    lines:  [ExpenseLine],
+    total:  float,
+}
+
+component MonthCell inherits Rectangle {
+    in property <float> value;
+    in property <color> accent-color;
+
+    horizontal-stretch: 1;
+    height: 28px;
+
+    Text {
+        text: value > 0.0 ? value : "";
+        font-size: 9px;
+        color: accent-color;
+        horizontal-alignment: center;
+    }
+}
+
+component ExpenseTable inherits Rectangle {
+    in property <ExpenseSection> section;
+    in property <color> accent;
+
+    border-radius: 10px;
+    background: Palette.card;
+    border-width: 1px;
+    border-color: Palette.card-border;
+
+    VerticalLayout {
+        padding: 12px;
+        spacing: 4px;
+
+        // Section header
+        HorizontalLayout {
+            spacing: 8px;
+            height: 32px;
+
+            Text {
+                text: section.label;
+                font-size: 13px;
+                font-weight: 700;
+                color: Palette.text;
+                horizontal-stretch: 1;
+            }
+            Text {
+                text: section.total;
+                font-size: 12px;
+                font-weight: 700;
+                color: accent;
+            }
+        }
+
+        Rectangle { height: 1px; background: Palette.card-border; }
+
+        // Column headers
+        HorizontalLayout {
+            spacing: 2px;
+            height: 20px;
+
+            Text { text: "Name"; font-size: 8px; color: Palette.text3; width: 72px; }
+            Text { text: "J";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "F";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "M";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "A";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "M";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "J";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "J";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "A";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "S";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "O";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "N";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "D";  font-size: 8px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "Total"; font-size: 8px; color: Palette.text3; width: 52px; horizontal-alignment: right; }
+        }
+
+        for line in section.lines : HorizontalLayout {
+            spacing: 2px;
+            height: 26px;
+
+            Text { text: line.name; font-size: 10px; color: Palette.text2; width: 72px; overflow: elide; }
+            MonthCell { value: line.m0;  accent-color: accent; }
+            MonthCell { value: line.m1;  accent-color: accent; }
+            MonthCell { value: line.m2;  accent-color: accent; }
+            MonthCell { value: line.m3;  accent-color: accent; }
+            MonthCell { value: line.m4;  accent-color: accent; }
+            MonthCell { value: line.m5;  accent-color: accent; }
+            MonthCell { value: line.m6;  accent-color: accent; }
+            MonthCell { value: line.m7;  accent-color: accent; }
+            MonthCell { value: line.m8;  accent-color: accent; }
+            MonthCell { value: line.m9;  accent-color: accent; }
+            MonthCell { value: line.m10; accent-color: accent; }
+            MonthCell { value: line.m11; accent-color: accent; }
+            Text { text: line.total; font-size: 10px; font-weight: 700; color: accent; width: 52px; horizontal-alignment: right; vertical-alignment: center; }
+        }
+    }
+}
+
+export component ExpensesView inherits Flickable {
+    in property <string>         currency:   "CHF";
+    in property <ExpenseSection> fixed:      { label: "Fixed",      lines: [], total: 0.0 };
+    in property <ExpenseSection> occasional: { label: "Occasional", lines: [], total: 0.0 };
+    in property <ExpenseSection> withdrawals:{ label: "Withdrawals",lines: [], total: 0.0 };
+
+    viewport-height: 900px;
+
+    VerticalLayout {
+        padding: 14px;
+        spacing: 12px;
+
+        Text {
+            text: "Expenses";
+            font-size: 20px;
+            font-weight: 700;
+            color: Palette.text;
+        }
+
+        ExpenseTable { section: fixed;       accent: Palette.blue; }
+        ExpenseTable { section: occasional;  accent: Palette.amber; }
+        ExpenseTable { section: withdrawals; accent: Palette.teal; }
+
+        Rectangle { height: 40px; }
+    }
+}

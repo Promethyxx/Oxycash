@@ -1,0 +1,102 @@
+// oxycash-rs - ui/savings_view.slint
+// Port of build_epargne_view() in special_views.py
+
+import { Palette } from "palette.slint";
+
+export struct SavingsEntry {
+    label: string,
+    target: float,
+    current: float,
+    percent: int,
+}
+
+export component SavingsView inherits Flickable {
+    in property <string>          currency: "CHF";
+    in property <[SavingsEntry]>  entries:  [];
+
+    callback add-entry();
+    callback save-requested();
+
+    viewport-height: 600px;
+
+    VerticalLayout {
+        padding: 14px;
+        spacing: 10px;
+
+        Text {
+            text: "Savings";
+            font-size: 20px;
+            font-weight: 700;
+            color: Palette.text;
+        }
+
+        for entry[i] in entries : Rectangle {
+            border-radius: 10px;
+            background: Palette.card;
+            border-width: 1px;
+            border-color: entry.percent >= 100 ? Palette.green : Palette.card-border;
+
+            VerticalLayout {
+                padding: 14px;
+                spacing: 8px;
+
+                HorizontalLayout {
+                    spacing: 8px;
+
+                    Text {
+                        text: entry.label;
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: Palette.text;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: entry.current + " / " + entry.target + " " + currency;
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: entry.percent >= 100 ? Palette.green : Palette.teal;
+                    }
+                }
+
+                // Progress bar
+                Rectangle {
+                    height: 6px;
+                    border-radius: 3px;
+                    background: Palette.card-border;
+
+                    Rectangle {
+                        height: 6px;
+                        border-radius: 3px;
+                        width: clamp(entry.percent * 1px, 0px, parent.width);
+                        background: entry.percent >= 100 ? Palette.green : Palette.teal;
+                    }
+                }
+
+                Text {
+                    text: entry.percent + "%";
+                    font-size: 10px;
+                    font-weight: 700;
+                    color: entry.percent >= 100 ? Palette.green : Palette.teal;
+                }
+            }
+        }
+
+        Rectangle {
+            height: 42px;
+            border-radius: 10px;
+            background: transparent;
+            border-width: 1px;
+            border-color: Palette.card-border;
+            TouchArea { clicked => { root.add-entry(); } }
+            Text {
+                text: "+ Add project";
+                font-size: 12px;
+                font-weight: 600;
+                color: Palette.text3;
+                horizontal-alignment: center;
+            }
+        }
+
+        Rectangle { height: 40px; }
+    }
+}

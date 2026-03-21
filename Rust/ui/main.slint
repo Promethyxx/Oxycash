@@ -1,0 +1,293 @@
+// oxycash-rs - ui/main.slint
+
+import { Palette }      from "palette.slint";
+import { MonthView, LineItem, PaymentItem } from "month_view.slint";
+import { SettingsView } from "settings.slint";
+import { ChartsView }   from "charts_view.slint";
+import { DebtsView }    from "debts_view.slint";
+import { SavingsView }  from "savings_view.slint";
+import { ExpensesView } from "expenses_view.slint";
+
+export enum Tab {
+    JAN, FEB, MAR, APR, MAI, JUN,
+    JUL, AUG, SEP, OCT, NOV, DEC,
+    Debts, Savings, Expenses, Viability, Charts, Config
+}
+
+component TabButton inherits Rectangle {
+    in property <string> label;
+    in property <bool>   active;
+    in property <bool>   special;
+    in property <color>  active-color;
+    callback clicked;
+
+    height: 32px;
+    min-width: 42px;
+    border-radius: 8px;
+    background: active ? active-color : transparent;
+    animate background { duration: 150ms; }
+
+    TouchArea { clicked => { root.clicked(); } }
+
+    Text {
+        text: label;
+        font-size: 11px;
+        font-weight: 600;
+        color: active ? #1a1a1a : (special ? Palette.teal : Palette.text3);
+        vertical-alignment: center;
+        horizontal-alignment: center;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+component SyncBadge inherits Rectangle {
+    in property <string> status;
+
+    height: 22px;
+    border-radius: 8px;
+    background: status == "dav"     ? #7BC47F22
+              : status == "dav_err" ? #E0555522
+              : #F2D38822;
+
+    Text {
+        text: status == "dav"     ? "WebDAV"
+            : status == "dav_err" ? "Offline"
+            : "Local";
+        font-size: 10px;
+        font-weight: 600;
+        color: status == "dav"     ? Palette.green
+             : status == "dav_err" ? Palette.danger
+             : Palette.amber;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+}
+
+component Toast inherits Rectangle {
+    in property <string> message;
+    in property <bool>   show;
+
+    opacity: show ? 1.0 : 0.0;
+    animate opacity { duration: 300ms; }
+    background: Palette.green;
+    border-radius: 10px;
+    height: 36px;
+
+    Text {
+        text: message;
+        font-size: 13px;
+        font-weight: 500;
+        color: #1a1a1a;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "Oxycash";
+    background: Palette.bg;
+    min-width: 320px;
+    min-height: 480px;
+
+    in-out property <Tab>   current-tab:     Tab.JAN;
+    in property <string>    profile-name:    "Default";
+    in property <string>    sync-status:     "local";
+    in property <string>    currency:        "CHF";
+    in property <bool>      is-dark:         true;
+    in property <string>    toast-message:   "";
+    in property <bool>      toast-show:      false;
+    in property <string>  month-name:       "January";
+    in property <string>  sum-income:       "0"; in property <string>  sum-income-b: "0"; in property <string>  sum-income-c: "0"; in property <color>   sum-income-col:  #7BC47F;
+    in property <string>  sum-paid:         "0"; in property <string>  sum-paid-b:   "0"; in property <string>  sum-paid-c:   "0";
+    in property <string>  sum-topay:        "0"; in property <string>  sum-topay-b:  "0"; in property <string>  sum-topay-c:  "0";
+    in property <string>  sum-forecast:     "0"; in property <string>  sum-forecast-b:"0";in property <string>  sum-forecast-c:"0";in property <color>   sum-forecast-col:#7BC47F;
+    in property <string>  sum-balance:      "0"; in property <string>  sum-balance-b: "0";in property <string>  sum-balance-c: "0";in property <color>   sum-balance-col: #7BC47F;
+    in property <string>  sum-withdrawals:  "0";
+    in property <float>   chart-ret-budget: 0.0; in property <float>   chart-ret-paid: 0.0;
+    in property <float>   chart-fix-budget: 0.0; in property <float>   chart-fix-paid: 0.0;
+    in property <float>   chart-var-budget: 0.0; in property <float>   chart-var-paid: 0.0;
+    in property <float>   chart-max:        1.0;
+    in property <[bool]>           sections-open;
+    in property <[LineItem]>       sec0-lines; in property <[LineItem]>  sec1-lines; in property <[LineItem]>  sec2-lines; in property <[LineItem]>  sec3-lines;
+    in property <[bool]>           sec0-expanded; in property <[bool]>   sec1-expanded; in property <[bool]>   sec2-expanded; in property <[bool]>   sec3-expanded;
+    in property <[[PaymentItem]]>  sec0-payments; in property <[[PaymentItem]]> sec1-payments; in property <[[PaymentItem]]> sec2-payments; in property <[[PaymentItem]]> sec3-payments;
+
+    callback tab-changed(Tab);
+    callback save-requested();
+    callback toggle-theme();
+    callback go-config();
+    callback toggle-section(int);
+    callback toggle-line(int, int);
+    callback update-banque(int, int, string);
+    callback update-cash(int, int, string);
+    callback update-name(int, int, string);
+    callback delete-line(int, int);
+    callback add-line(int);
+    callback delete-pay(int, int, int);
+    callback add-pay(int, int, string, string);
+
+    // Toast overlay — outside the main layout, positioned absolutely
+    Toast {
+        message: toast-message;
+        show:    toast-show;
+        width:   240px;
+        x:       (parent.width - self.width) / 2;
+        y:       parent.height - 60px;
+    }
+
+    VerticalLayout {
+        spacing: 0px;
+
+        // Top bar
+        Rectangle {
+            background: Palette.bg2;
+            height: 104px;
+
+            Rectangle {
+                y: parent.height - 1px;
+                height: 1px;
+                background: Palette.card-border;
+            }
+
+            VerticalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                padding-top: 10px;
+                padding-bottom: 6px;
+                spacing: 8px;
+
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: space-between;
+
+                    HorizontalLayout {
+                        spacing: 8px;
+
+                        Text {
+                            text: "Oxycash";
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: Palette.text;
+                            vertical-alignment: center;
+                        }
+
+                        SyncBadge { status: sync-status; }
+
+                        Rectangle {
+                            height: 26px;
+                            border-radius: 6px;
+                            border-width: 1px;
+                            border-color: Palette.teal;
+                            TouchArea { clicked => { root.go-config(); } }
+                            Text {
+                                text: profile-name;
+                                font-size: 10px;
+                                font-weight: 600;
+                                color: Palette.teal;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 18px;
+                        border-width: 1px;
+                        border-color: Palette.card-border;
+                        TouchArea { clicked => { root.toggle-theme(); } }
+                        Text {
+                            text: is-dark ? "🌙" : "☀️";
+                            font-size: 16px;
+                            vertical-alignment: center;
+                            horizontal-alignment: center;
+                        }
+                    }
+                }
+
+                Flickable {
+                    height: 36px;
+                    viewport-width: 1400px;
+                    HorizontalLayout {
+                        spacing: 4px;
+                        alignment: start;
+
+                        TabButton { label: "January"; active: current-tab == Tab.JAN; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JAN); } }
+                        TabButton { label: "February"; active: current-tab == Tab.FEB; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.FEB); } }
+                        TabButton { label: "March"; active: current-tab == Tab.MAR; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.MAR); } }
+                        TabButton { label: "April"; active: current-tab == Tab.APR; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.APR); } }
+                        TabButton { label: "May"; active: current-tab == Tab.MAI; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.MAI); } }
+                        TabButton { label: "June"; active: current-tab == Tab.JUN; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JUN); } }
+                        TabButton { label: "July"; active: current-tab == Tab.JUL; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JUL); } }
+                        TabButton { label: "August"; active: current-tab == Tab.AUG; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.AUG); } }
+                        TabButton { label: "September"; active: current-tab == Tab.SEP; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.SEP); } }
+                        TabButton { label: "October"; active: current-tab == Tab.OCT; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.OCT); } }
+                        TabButton { label: "November"; active: current-tab == Tab.NOV; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.NOV); } }
+                        TabButton { label: "December"; active: current-tab == Tab.DEC; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.DEC); } }
+
+                        TabButton { label: "Debts";     active: current-tab == Tab.Debts;     special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Debts); } }
+                        TabButton { label: "Savings";   active: current-tab == Tab.Savings;   special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Savings); } }
+                        TabButton { label: "Expenses";  active: current-tab == Tab.Expenses;  special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Expenses); } }
+                        TabButton { label: "Viability"; active: current-tab == Tab.Viability; special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Viability); } }
+                        TabButton { label: "Charts";    active: current-tab == Tab.Charts;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Charts); } }
+                        TabButton { label: "Config";    active: current-tab == Tab.Config;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Config); } }
+                    }
+                }
+            }
+        }
+
+        // Content area
+        Rectangle {
+            background: Palette.bg;
+            vertical-stretch: 1;
+
+            if current-tab == Tab.JAN || current-tab == Tab.FEB || current-tab == Tab.MAR
+            || current-tab == Tab.APR || current-tab == Tab.MAI || current-tab == Tab.JUN
+            || current-tab == Tab.JUL || current-tab == Tab.AUG || current-tab == Tab.SEP
+            || current-tab == Tab.OCT || current-tab == Tab.NOV || current-tab == Tab.DEC : MonthView {
+                month-name:      month-name;
+                currency:        currency;
+                sum-income:      sum-income;       sum-income-b:   sum-income-b;   sum-income-c:   sum-income-c;   sum-income-col:   sum-income-col;
+                sum-paid:        sum-paid;         sum-paid-b:     sum-paid-b;     sum-paid-c:     sum-paid-c;
+                sum-topay:       sum-topay;        sum-topay-b:    sum-topay-b;    sum-topay-c:    sum-topay-c;
+                sum-forecast:    sum-forecast;     sum-forecast-b: sum-forecast-b; sum-forecast-c: sum-forecast-c; sum-forecast-col: sum-forecast-col;
+                sum-balance:     sum-balance;      sum-balance-b:  sum-balance-b;  sum-balance-c:  sum-balance-c;  sum-balance-col:  sum-balance-col;
+                sum-withdrawals: sum-withdrawals;
+                chart-ret-budget: chart-ret-budget; chart-ret-paid: chart-ret-paid;
+                chart-fix-budget: chart-fix-budget; chart-fix-paid: chart-fix-paid;
+                chart-var-budget: chart-var-budget; chart-var-paid: chart-var-paid;
+                chart-max:        chart-max;
+                sections-open:   sections-open;
+                sec0-lines:      sec0-lines;   sec1-lines:  sec1-lines;  sec2-lines:  sec2-lines;  sec3-lines:  sec3-lines;
+                sec0-expanded:   sec0-expanded;sec1-expanded:sec1-expanded;sec2-expanded:sec2-expanded;sec3-expanded:sec3-expanded;
+                sec0-payments:   sec0-payments;sec1-payments:sec1-payments;sec2-payments:sec2-payments;sec3-payments:sec3-payments;
+                save-requested  => { root.save-requested(); }
+                toggle-section(i)      => { root.toggle-section(i); }
+                toggle-line(s, l)      => { root.toggle-line(s, l); }
+                update-banque(s, l, v) => { root.update-banque(s, l, v); }
+                update-cash(s, l, v)   => { root.update-cash(s, l, v); }
+                update-name(s, l, v)   => { root.update-name(s, l, v); }
+                delete-line(s, l)      => { root.delete-line(s, l); }
+                add-line(i)            => { root.add-line(i); }
+                delete-pay(s, l, i)    => { root.delete-pay(s, l, i); }
+                add-pay(s, l, d, a)    => { root.add-pay(s, l, d, a); }
+            }
+            if current-tab == Tab.Debts     : DebtsView    { currency: currency; }
+            if current-tab == Tab.Savings   : SavingsView  { currency: currency; }
+            if current-tab == Tab.Expenses  : ExpensesView { currency: currency; }
+            if current-tab == Tab.Viability : Rectangle {
+                Text { text: "Viability - coming soon"; color: Palette.text2;
+                       font-size: 14px; horizontal-alignment: center; vertical-alignment: center; }
+            }
+            if current-tab == Tab.Charts    : ChartsView   { currency: currency; }
+            if current-tab == Tab.Config    : SettingsView {
+                profile-name: profile-name;
+                currency:     currency;
+                is-dark:      is-dark;
+                toggle-theme => { root.toggle-theme(); }
+            }
+        }
+    }
+}

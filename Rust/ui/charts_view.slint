@@ -1,0 +1,202 @@
+// oxycash-rs - ui/charts_view.slint
+// Port of charts_view.py - annual overview: 6 summary cards + monthly breakdown table
+
+import { Palette } from "palette.slint";
+
+component SummaryCard inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <color>  value-color;
+
+    border-radius: 10px;
+    background: Palette.card;
+    border-width: 1px;
+    border-color: Palette.card-border;
+    horizontal-stretch: 1;
+
+    VerticalLayout {
+        padding: 14px;
+        spacing: 4px;
+
+        Text {
+            text: label;
+            font-size: 9px;
+            font-weight: 600;
+            color: Palette.text3;
+        }
+
+        Text {
+            text: value;
+            font-size: 16px;
+            font-weight: 700;
+            color: value-color;
+        }
+    }
+}
+
+component MonthRow inherits Rectangle {
+    in property <string> month;
+    in property <string> income;
+    in property <string> expenses;
+    in property <string> forecast;
+    in property <color>  forecast-color;
+
+    height: 28px;
+    background: transparent;
+
+    HorizontalLayout {
+        spacing: 4px;
+        padding-left: 4px;
+        padding-right: 4px;
+
+        Text { text: month;    font-size: 10px; color: Palette.text3;  width: 36px; horizontal-alignment: center; }
+        Text { text: income;   font-size: 10px; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: expenses; font-size: 10px; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: forecast; font-size: 10px; color: forecast-color; font-weight: 700; horizontal-stretch: 1; horizontal-alignment: right; }
+    }
+}
+
+export component ChartsView inherits Flickable {
+    in property <string> currency: "CHF";
+
+    // Annual totals - set from Rust
+    in property <string> total-income:      "+0";
+    in property <string> total-paid:        "+0";
+    in property <string> total-to-pay:      "+0";
+    in property <string> total-withdrawals: "+0";
+    in property <string> total-forecast:    "+0";
+    in property <string> total-balance:     "+0";
+    in property <color>  income-color:      #7BC47F;
+    in property <color>  paid-color:        #85CDCA;
+    in property <color>  to-pay-color:      #E05555;
+    in property <color>  withdrawals-color: #F2D388;
+    in property <color>  forecast-color:    #7BC47F;
+    in property <color>  balance-color:     #7BC47F;
+
+    // Monthly rows - 12 entries passed as flat string arrays from Rust
+    in property <[string]> row-months:    [];
+    in property <[string]> row-incomes:   [];
+    in property <[string]> row-expenses:  [];
+    in property <[string]> row-forecasts: [];
+    in property <[color]>  row-forecast-colors: [];
+
+    // Annual cumulative
+    in property <string> annual-cumul:       "+0";
+    in property <color>  annual-cumul-color: #7BC47F;
+
+    viewport-height: 700px;
+
+    VerticalLayout {
+        padding: 14px;
+        spacing: 10px;
+
+        Text {
+            text: "Charts";
+            font-size: 20px;
+            font-weight: 700;
+            color: Palette.text;
+        }
+
+        // Row 1
+        HorizontalLayout {
+            spacing: 8px;
+            SummaryCard { label: "Income";      value: total-income;      value-color: income-color; }
+            SummaryCard { label: "Paid";        value: total-paid;        value-color: paid-color; }
+        }
+
+        // Row 2
+        HorizontalLayout {
+            spacing: 8px;
+            SummaryCard { label: "To pay";      value: total-to-pay;      value-color: to-pay-color; }
+            SummaryCard { label: "Withdrawals"; value: total-withdrawals; value-color: withdrawals-color; }
+        }
+
+        // Row 3
+        HorizontalLayout {
+            spacing: 8px;
+            SummaryCard { label: "Forecast";    value: total-forecast;    value-color: forecast-color; }
+            SummaryCard { label: "Balance";     value: total-balance;     value-color: balance-color; }
+        }
+
+        // Annual cumulative card
+        Rectangle {
+            border-radius: 10px;
+            background: Palette.card;
+            border-width: 1px;
+            border-color: Palette.card-border;
+            height: 52px;
+
+            HorizontalLayout {
+                padding: 14px;
+
+                Text {
+                    text: "Annual cumulative";
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: Palette.text2;
+                    horizontal-stretch: 1;
+                }
+                Text {
+                    text: annual-cumul + " " + currency;
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: annual-cumul-color;
+                    horizontal-alignment: right;
+                }
+            }
+        }
+
+        // Monthly table
+        Rectangle {
+            border-radius: 10px;
+            background: Palette.card;
+            border-width: 1px;
+            border-color: Palette.card-border;
+
+            VerticalLayout {
+                padding: 12px;
+                spacing: 2px;
+
+                // Header
+                HorizontalLayout {
+                    spacing: 4px;
+                    padding-left: 4px;
+                    padding-right: 4px;
+                    height: 24px;
+
+                    Text { text: "";         width: 36px; }
+                    Text { text: "Income";   font-size: 9px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Exp.";     font-size: 9px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Forecast"; font-size: 9px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                }
+
+                Rectangle { height: 1px; background: Palette.card-border; }
+
+                for i in 12 : MonthRow {
+                    month:           row-months[i];
+                    income:          row-incomes[i];
+                    expenses:        row-expenses[i];
+                    forecast:        row-forecasts[i];
+                    forecast-color:  row-forecast-colors[i];
+                }
+
+                Rectangle { height: 1px; background: Palette.card-border; }
+
+                // Total row
+                HorizontalLayout {
+                    spacing: 4px;
+                    padding-left: 4px;
+                    padding-right: 4px;
+                    height: 28px;
+
+                    Text { text: "Total"; font-size: 10px; font-weight: 700; color: Palette.text; width: 36px; }
+                    Text { text: total-income;   font-size: 10px; font-weight: 700; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: total-paid;     font-size: 10px; font-weight: 700; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: total-forecast; font-size: 10px; font-weight: 700; color: forecast-color; horizontal-stretch: 1; horizontal-alignment: right; }
+                }
+            }
+        }
+
+        Rectangle { height: 40px; }
+    }
+}
