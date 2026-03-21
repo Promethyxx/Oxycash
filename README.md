@@ -1,4 +1,4 @@
-# Oxycash - Rust vresion in progress
+# Oxycash - Rust version in progress
 - The python project will be unfollowed by now.
 
 # Oxycash — Flet/Python
