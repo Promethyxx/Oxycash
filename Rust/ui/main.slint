@@ -6,8 +6,9 @@ import { MonthView, LineItem, PaymentItem, RegisterEntry } from "month_view.slin
 import { SettingsView, ProfileItem } from "settings.slint";
 import { ChartsView }   from "charts_view.slint";
 import { DebtsView, DebtItem }    from "debts_view.slint";
-import { SavingsView, SavingsEntry }  from "savings_view.slint";
+import { SavingsView, SavingsEntry, SavingsRowItem }  from "savings_view.slint";
 import { ExpensesView, ExpenseSection, ExpenseLine } from "expenses_view.slint";
+import { ViabilityView, ViaColumn, ViaPalier, ViaPalierCell } from "viability_view.slint";
 
 export enum Tab {
     JAN, FEB, MAR, APR, MAI, JUN,
@@ -36,7 +37,7 @@ component TabButton inherits Rectangle {
 
         Text {
             text: label;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 600;
             color: active ? #1a1a1a : (special ? Palette.teal : Palette.text3);
             vertical-alignment: center;
@@ -58,7 +59,7 @@ component SyncBadge inherits Rectangle {
         text: status == "dav"     ? "WebDAV"
             : status == "dav_err" ? "Offline"
             : "Local";
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 600;
         color: status == "dav"     ? Palette.green
              : status == "dav_err" ? Palette.danger
@@ -80,7 +81,7 @@ component Toast inherits Rectangle {
 
     Text {
         text: message;
-        font-size: 13px;
+        font-size: 15px;
         font-weight: 500;
         color: #1a1a1a;
         vertical-alignment: center;
@@ -99,6 +100,7 @@ export component AppWindow inherits Window {
     in property <string>    sync-status:     "local";
     in property <string>    currency:        "CHF";
     in property <bool>      is-dark:         true;
+    in property <string>   lang-label:      "FR";
     in property <string>    toast-message:   "";
     in property <bool>      toast-show:      false;
     in property <string>  month-name:       "January";
@@ -156,6 +158,11 @@ export component AppWindow inherits Window {
     in property <ExpenseSection> expenses-occasional:  { label: "Occasional",  lines: [], total: 0.0 };
     in property <ExpenseSection> expenses-withdrawals: { label: "Withdrawals", lines: [], total: 0.0 };
 
+    // Viability properties
+    in property <[ViaColumn]>  via-columns: [];
+    in property <[ViaPalier]>  via-paliers: [];
+    in property <int>          via-n-paliers: 5;
+
     // Settings properties
     in property <[ProfileItem]> settings-profiles:  [];
     in property <string>        settings-dav-status: "";
@@ -167,6 +174,9 @@ export component AppWindow inherits Window {
     callback tab-changed(Tab);
     callback save-requested();
     callback toggle-theme();
+    callback toggle-lang();
+    callback font-scale-down();
+    callback font-scale-up();
     callback go-config();
     callback toggle-section(int);
     callback toggle-line(int, int);
@@ -185,6 +195,19 @@ export component AppWindow inherits Window {
     callback add-saving();
     callback delete-saving(int);
     callback update-saving-field(int, string, string);
+    callback toggle-saving(int);
+    callback add-saving-row(int);
+    callback delete-saving-row(int, int);
+    callback update-saving-row-field(int, int, string, string);
+    callback add-via-palier();
+    callback delete-via-palier(int);
+    callback update-via-cell(int, int, string);
+    callback generate-via();
+    callback clear-via();
+    callback add-via-column();
+    callback delete-via-column(int);
+    callback update-via-column-name(int, string);
+    callback toggle-via-column-income(int);
     callback save-dav();
     callback test-dav();
     callback clear-dav();
@@ -235,7 +258,7 @@ export component AppWindow inherits Window {
 
                         Text {
                             text: "Oxycash";
-                            font-size: 18px;
+                            font-size: 20px;
                             font-weight: 700;
                             color: Palette.text;
                             vertical-alignment: center;
@@ -251,7 +274,7 @@ export component AppWindow inherits Window {
                             TouchArea { clicked => { root.go-config(); } }
                             Text {
                                 text: profile-name;
-                                font-size: 10px;
+                                font-size: 12px;
                                 font-weight: 600;
                                 color: Palette.teal;
                                 vertical-alignment: center;
@@ -260,18 +283,47 @@ export component AppWindow inherits Window {
                         }
                     }
 
-                    Rectangle {
-                        width: 36px;
-                        height: 36px;
-                        border-radius: 18px;
-                        border-width: 1px;
-                        border-color: Palette.card-border;
-                        TouchArea { clicked => { root.toggle-theme(); } }
-                        Text {
-                            text: is-dark ? "🌙" : "☀️";
-                            font-size: 16px;
-                            vertical-alignment: center;
-                            horizontal-alignment: center;
+                    HorizontalLayout {
+                        spacing: 6px;
+
+                        // A- font decrease
+                        Rectangle {
+                            width: 36px; height: 36px; border-radius: 6px;
+                            border-width: 1px; border-color: Palette.card-border;
+                            TouchArea { clicked => { root.font-scale-down(); } }
+                            Text { text: "A-"; font-size: 13px; font-weight: 700; color: Palette.text2;
+                                horizontal-alignment: center; vertical-alignment: center; }
+                        }
+
+                        // A+ font increase
+                        Rectangle {
+                            width: 36px; height: 36px; border-radius: 6px;
+                            border-width: 1px; border-color: Palette.card-border;
+                            TouchArea { clicked => { root.font-scale-up(); } }
+                            Text { text: "A+"; font-size: 13px; font-weight: 700; color: Palette.text2;
+                                horizontal-alignment: center; vertical-alignment: center; }
+                        }
+
+                        // Lang toggle
+                        Rectangle {
+                            width: 36px; height: 36px; border-radius: 8px;
+                            border-width: 1px; border-color: Palette.gold;
+                            TouchArea { clicked => { root.toggle-lang(); } }
+                            Text { text: lang-label; font-size: 12px; font-weight: 700; color: Palette.gold;
+                                horizontal-alignment: center; vertical-alignment: center; }
+                        }
+
+                        // Theme toggle
+                        Rectangle {
+                            width: 36px; height: 36px; border-radius: 18px;
+                            border-width: 1px; border-color: Palette.card-border;
+                            TouchArea { clicked => { root.toggle-theme(); } }
+                            Text {
+                                text: is-dark ? "🌙" : "☀️";
+                                font-size: 18px;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
                         }
                     }
                 }
@@ -360,9 +412,13 @@ export component AppWindow inherits Window {
             if current-tab == Tab.Savings   : SavingsView {
                 currency: currency;
                 entries:  savings-list;
-                add-entry           => { root.add-saving(); }
-                delete-entry(idx)   => { root.delete-saving(idx); }
-                update-entry-field(idx, field, val) => { root.update-saving-field(idx, field, val); }
+                add-project              => { root.add-saving(); }
+                delete-project(idx)      => { root.delete-saving(idx); }
+                update-project-field(idx, field, val) => { root.update-saving-field(idx, field, val); }
+                toggle-project(idx)      => { root.toggle-saving(idx); }
+                add-row(idx)             => { root.add-saving-row(idx); }
+                delete-row(pi, ri)       => { root.delete-saving-row(pi, ri); }
+                update-row-field(pi, ri, field, val) => { root.update-saving-row-field(pi, ri, field, val); }
             }
             if current-tab == Tab.Expenses  : ExpensesView {
                 currency:    currency;
@@ -370,9 +426,20 @@ export component AppWindow inherits Window {
                 occasional:  expenses-occasional;
                 withdrawals: expenses-withdrawals;
             }
-            if current-tab == Tab.Viability : Rectangle {
-                Text { text: "Viability - coming soon"; color: Palette.text2;
-                       font-size: 14px; horizontal-alignment: center; vertical-alignment: center; }
+            if current-tab == Tab.Viability : ViabilityView {
+                currency:     currency;
+                columns:      via-columns;
+                paliers:      via-paliers;
+                n-paliers:    via-n-paliers;
+                add-palier              => { root.add-via-palier(); }
+                delete-palier(i)        => { root.delete-via-palier(i); }
+                update-cell(p, c, v)    => { root.update-via-cell(p, c, v); }
+                generate-paliers        => { root.generate-via(); }
+                clear-paliers           => { root.clear-via(); }
+                add-column              => { root.add-via-column(); }
+                delete-column(i)        => { root.delete-via-column(i); }
+                update-column-name(i,n) => { root.update-via-column-name(i, n); }
+                toggle-column-income(i) => { root.toggle-via-column-income(i); }
             }
             if current-tab == Tab.Charts    : ChartsView {
                 currency:              currency;

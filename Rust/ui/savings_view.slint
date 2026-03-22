@@ -1,14 +1,24 @@
 // oxycash-rs - ui/savings_view.slint
-// Port of build_epargne_view() — editable sondages
+// Port of build_epargne_view() — savings projects with sub-rows
 
 import { Palette } from "palette.slint";
 
-export struct SavingsEntry {
-    label: string,
-    target: float,
-    current: float,
+export struct SavingsRowItem {
+    name: string,
+    montant: float,
+    cible: float,
     percent: int,
     idx: int,
+}
+
+export struct SavingsEntry {
+    label: string,
+    montant: float,
+    cible: float,
+    percent: int,
+    idx: int,
+    open: bool,
+    rows: [SavingsRowItem],
 }
 
 export component SavingsView inherits Flickable {
@@ -16,9 +26,13 @@ export component SavingsView inherits Flickable {
     in property <string>          currency: "CHF";
     in property <[SavingsEntry]>  entries:  [];
 
-    callback add-entry();
-    callback delete-entry(int);
-    callback update-entry-field(int, string, string);  // idx, field, value
+    callback add-project();
+    callback delete-project(int);
+    callback update-project-field(int, string, string);  // proj-idx, field, value
+    callback toggle-project(int);
+    callback add-row(int);            // proj-idx
+    callback delete-row(int, int);    // proj-idx, row-idx
+    callback update-row-field(int, int, string, string);  // proj-idx, row-idx, field, value
 
     VerticalLayout {
         padding: 14px;
@@ -26,25 +40,26 @@ export component SavingsView inherits Flickable {
 
         Text {
             text: "Savings";
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             color: Palette.text;
         }
 
-        for entry in entries : Rectangle {
+        for proj in entries : Rectangle {
             border-radius: 10px;
             background: Palette.card;
             border-width: 1px;
-            border-color: entry.percent >= 100 ? Palette.green : Palette.card-border;
+            border-color: proj.open ? Palette.gold : Palette.card-border;
 
             VerticalLayout {
                 padding: 14px;
-                spacing: 8px;
+                spacing: 6px;
 
-                // Name + delete
+                // Project header: label + expand + montant / cible + delete
                 HorizontalLayout {
-                    spacing: 8px;
+                    spacing: 4px;
 
+                    // Label
                     Rectangle {
                         horizontal-stretch: 1;
                         height: 30px;
@@ -52,107 +67,206 @@ export component SavingsView inherits Flickable {
                         border-width: 1px;
                         border-color: Palette.card-border;
                         TextInput {
-                            text: entry.label;
-                            font-size: 13px;
+                            text: proj.label;
+                            font-size: 14px;
                             font-weight: 700;
                             color: Palette.text;
                             vertical-alignment: center;
-                            accepted => { root.update-entry-field(entry.idx, "name", self.text); }
+                            accepted => { root.update-project-field(proj.idx, "label", self.text); }
                         }
                     }
 
+                    // Expand toggle
                     Rectangle {
-                        width: 28px;
-                        height: 28px;
-                        border-radius: 6px;
-                        TouchArea { clicked => { root.delete-entry(entry.idx); } }
+                        width: 26px; height: 26px; border-radius: 4px;
+                        background: proj.open ? Palette.gold.with-alpha(0.2) : transparent;
+                        TouchArea { clicked => { root.toggle-project(proj.idx); } }
                         Text {
-                            text: "x";
-                            font-size: 12px;
-                            color: Palette.danger;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
+                            text: proj.open ? "−" : "+";
+                            font-size: 16px; font-weight: 700;
+                            color: proj.open ? Palette.gold : Palette.text3;
+                            horizontal-alignment: center; vertical-alignment: center;
                         }
+                    }
+
+                    // Montant
+                    Rectangle {
+                        width: 82px; height: 30px; border-radius: 6px;
+                        border-width: 1px; border-color: Palette.card-border;
+                        TextInput {
+                            text: proj.montant;
+                            font-size: 14px; color: Palette.teal;
+                            horizontal-alignment: right; input-type: decimal;
+                            vertical-alignment: center;
+                            accepted => { root.update-project-field(proj.idx, "montant", self.text); }
+                        }
+                    }
+
+                    Text { text: "/"; font-size: 15px; font-weight: 700; color: Palette.text3; vertical-alignment: center; }
+
+                    // Cible
+                    Rectangle {
+                        width: 82px; height: 30px; border-radius: 6px;
+                        border-width: 1px; border-color: Palette.card-border;
+                        TextInput {
+                            text: proj.cible;
+                            font-size: 14px; color: Palette.gold;
+                            horizontal-alignment: right; input-type: decimal;
+                            vertical-alignment: center;
+                            accepted => { root.update-project-field(proj.idx, "cible", self.text); }
+                        }
+                    }
+
+                    // Delete
+                    Rectangle {
+                        width: 26px; height: 26px; border-radius: 4px;
+                        TouchArea { clicked => { root.delete-project(proj.idx); } }
+                        Text { text: "x"; font-size: 14px; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
                     }
                 }
 
-                // Current + Goal
-                HorizontalLayout {
-                    spacing: 6px;
+                // Progress bar (project level)
+                if proj.cible > 0.0 : VerticalLayout {
+                    spacing: 2px;
+                    HorizontalLayout {
+                        alignment: start;
+                        Rectangle {
+                            height: 6px; border-radius: 3px; background: Palette.card-border;
+                            horizontal-stretch: 1;
+                            Rectangle {
+                                x: 0px; y: 0px;
+                                height: 6px; border-radius: 3px;
+                                width: clamp(parent.width * proj.percent / 100, 0px, parent.width);
+                                background: proj.percent >= 100 ? Palette.green : Palette.teal;
+                            }
+                        }
+                    }
+                    Text {
+                        text: proj.percent + "%";
+                        font-size: 14px; font-weight: 700;
+                        color: proj.percent >= 100 ? Palette.green : Palette.teal;
+                    }
+                }
 
-                    Text { text: "Current"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 50px; }
-                    Rectangle {
-                        horizontal-stretch: 1;
-                        height: 28px;
-                        border-radius: 5px;
+                // Sub-rows (when open)
+                if proj.open : VerticalLayout {
+                    spacing: 4px;
+
+                    Rectangle { height: 1px; background: Palette.card-border; }
+
+                    for row in proj.rows : Rectangle {
+                        border-radius: 8px;
+                        background: Palette.card;
                         border-width: 1px;
                         border-color: Palette.card-border;
-                        background: #00000020;
-                        TextInput {
-                            text: entry.current;
-                            font-size: 11px;
-                            color: Palette.teal;
-                            horizontal-alignment: right;
-                            input-type: decimal;
-                            vertical-alignment: center;
-                            accepted => { root.update-entry-field(entry.idx, "total", self.text); }
+
+                        VerticalLayout {
+                            padding-left: 12px; padding-right: 12px;
+                            padding-top: 8px; padding-bottom: 8px;
+                            spacing: 4px;
+
+                            HorizontalLayout {
+                                spacing: 4px;
+
+                                // Row name
+                                Rectangle {
+                                    horizontal-stretch: 1; height: 28px;
+                                    border-radius: 5px; border-width: 1px;
+                                    border-color: Palette.card-border;
+                                    TextInput {
+                                        text: row.name;
+                                        font-size: 14px; color: Palette.text;
+                                        vertical-alignment: center;
+                                        accepted => { root.update-row-field(proj.idx, row.idx, "name", self.text); }
+                                    }
+                                }
+
+                                // Row montant
+                                Rectangle {
+                                    width: 72px; height: 28px;
+                                    border-radius: 5px; border-width: 1px;
+                                    border-color: Palette.card-border;
+                                    TextInput {
+                                        text: row.montant;
+                                        font-size: 14px; color: Palette.teal;
+                                        horizontal-alignment: right; input-type: decimal;
+                                        vertical-alignment: center;
+                                        accepted => { root.update-row-field(proj.idx, row.idx, "montant", self.text); }
+                                    }
+                                }
+
+                                Text { text: "/"; font-size: 14px; color: Palette.text3; vertical-alignment: center; }
+
+                                // Row cible
+                                Rectangle {
+                                    width: 72px; height: 28px;
+                                    border-radius: 5px; border-width: 1px;
+                                    border-color: Palette.card-border;
+                                    TextInput {
+                                        text: row.cible;
+                                        font-size: 14px; color: Palette.gold;
+                                        horizontal-alignment: right; input-type: decimal;
+                                        vertical-alignment: center;
+                                        accepted => { root.update-row-field(proj.idx, row.idx, "cible", self.text); }
+                                    }
+                                }
+
+                                // Delete row
+                                Rectangle {
+                                    width: 24px; height: 24px; border-radius: 4px;
+                                    TouchArea { clicked => { root.delete-row(proj.idx, row.idx); } }
+                                    Text { text: "x"; font-size: 14px; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                            }
+
+                            // Row progress
+                            if row.cible > 0.0 : VerticalLayout {
+                                spacing: 2px;
+                                HorizontalLayout {
+                                    alignment: start;
+                                    Rectangle {
+                                        height: 5px; border-radius: 3px; background: Palette.card-border;
+                                        horizontal-stretch: 1;
+                                        Rectangle {
+                                            x: 0px; y: 0px;
+                                            height: 5px; border-radius: 3px;
+                                            width: clamp(parent.width * row.percent / 100, 0px, parent.width);
+                                            background: row.percent >= 100 ? Palette.green : Palette.teal;
+                                        }
+                                    }
+                                }
+                                Text {
+                                    text: row.percent + "%";
+                                    font-size: 14px; font-weight: 700;
+                                    color: row.percent >= 100 ? Palette.green : Palette.teal;
+                                }
+                            }
                         }
                     }
 
-                    Text { text: "Goal"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 32px; }
+                    // Add row button
                     Rectangle {
-                        horizontal-stretch: 1;
-                        height: 28px;
-                        border-radius: 5px;
-                        border-width: 1px;
-                        border-color: Palette.card-border;
-                        background: #00000020;
-                        TextInput {
-                            text: entry.target;
-                            font-size: 11px;
-                            color: Palette.gold;
-                            horizontal-alignment: right;
-                            input-type: decimal;
-                            vertical-alignment: center;
-                            accepted => { root.update-entry-field(entry.idx, "goal", self.text); }
+                        height: 32px; border-radius: 8px;
+                        border-width: 1px; border-color: Palette.card-border;
+                        TouchArea { clicked => { root.add-row(proj.idx); } }
+                        HorizontalLayout {
+                            padding-left: 12px; spacing: 6px;
+                            Text { text: "+"; font-size: 14px; color: Palette.text3; vertical-alignment: center; }
+                            Text { text: "Add entry"; font-size: 14px; color: Palette.text3; vertical-alignment: center; }
                         }
                     }
-                }
-
-                // Progress bar
-                Rectangle {
-                    height: 6px;
-                    border-radius: 3px;
-                    background: Palette.card-border;
-
-                    Rectangle {
-                        height: 6px;
-                        border-radius: 3px;
-                        width: clamp(parent.width * entry.percent / 100, 0px, parent.width);
-                        background: entry.percent >= 100 ? Palette.green : Palette.teal;
-                    }
-                }
-
-                Text {
-                    text: entry.percent + "%";
-                    font-size: 10px;
-                    font-weight: 700;
-                    color: entry.percent >= 100 ? Palette.green : Palette.teal;
                 }
             }
         }
 
+        // Add project button
         Rectangle {
-            height: 42px;
-            border-radius: 10px;
-            background: transparent;
-            border-width: 1px;
-            border-color: Palette.card-border;
-            TouchArea { clicked => { root.add-entry(); } }
+            height: 42px; border-radius: 10px;
+            border-width: 1px; border-color: Palette.card-border;
+            TouchArea { clicked => { root.add-project(); } }
             Text {
-                text: "+ Add project";
-                font-size: 12px;
-                font-weight: 600;
+                text: "+ New project";
+                font-size: 14px; font-weight: 600;
                 color: Palette.text3;
                 horizontal-alignment: center;
             }

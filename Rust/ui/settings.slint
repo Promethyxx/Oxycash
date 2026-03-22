@@ -24,7 +24,7 @@ component Card inherits Rectangle {
 
         Text {
             text: title;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 600;
             color: Palette.text3;
         }
@@ -50,7 +50,7 @@ component ActionBtn inherits Rectangle {
     TouchArea { clicked => { root.clicked(); } }
     Text {
         text: label;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 600;
         color: danger ? Palette.danger : text-color;
         horizontal-alignment: center;
@@ -62,6 +62,7 @@ component InputField inherits Rectangle {
     in property <string>  label-text;
     in-out property <string> value;
     in property <bool>    is-password: false;
+    in-out property <bool> show-password: false;
 
     height: 56px;
     background: transparent;
@@ -71,22 +72,45 @@ component InputField inherits Rectangle {
 
         Text {
             text: label-text;
-            font-size: 11px;
+            font-size: 14px;
             color: Palette.text2;
         }
 
-        Rectangle {
-            height: 34px;
-            border-radius: 6px;
-            border-width: 1px;
-            border-color: Palette.card-border;
-            background: Palette.card;
+        HorizontalLayout {
+            spacing: 4px;
 
-            TextInput {
-                text <=> root.value;
-                font-size: 13px;
-                color: Palette.text;
-                vertical-alignment: center;
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 34px;
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                background: Palette.card;
+
+                if !is-password || show-password : TextInput {
+                    text <=> root.value;
+                    font-size: 15px;
+                    color: Palette.text;
+                    vertical-alignment: center;
+                }
+                if is-password && !show-password : TextInput {
+                    text <=> root.value;
+                    font-size: 15px;
+                    color: Palette.text;
+                    vertical-alignment: center;
+                    input-type: password;
+                }
+            }
+
+            if is-password : Rectangle {
+                width: 34px; height: 34px; border-radius: 6px;
+                border-width: 1px; border-color: Palette.card-border;
+                TouchArea { clicked => { show-password = !show-password; } }
+                Text {
+                    text: show-password ? "🙈" : "👁";
+                    font-size: 16px;
+                    horizontal-alignment: center; vertical-alignment: center;
+                }
             }
         }
     }
@@ -129,7 +153,7 @@ export component SettingsView inherits Flickable {
 
         Text {
             text: "Configuration";
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             color: Palette.text;
         }
@@ -161,7 +185,7 @@ export component SettingsView inherits Flickable {
 
                     Text {
                         text: prof.name;
-                        font-size: 12px;
+                        font-size: 14px;
                         color: Palette.text;
                         horizontal-stretch: 1;
                         vertical-alignment: center;
@@ -177,7 +201,7 @@ export component SettingsView inherits Flickable {
                         TouchArea { clicked => { root.switch-profile(prof.idx); } }
                         Text {
                             text: prof.active ? "✓" : "Use";
-                            font-size: 10px;
+                            font-size: 14px;
                             color: prof.active ? Palette.teal : Palette.text2;
                             horizontal-alignment: center;
                             vertical-alignment: center;
@@ -192,7 +216,7 @@ export component SettingsView inherits Flickable {
                         TouchArea { clicked => { root.delete-profile(prof.idx); } }
                         Text {
                             text: "x";
-                            font-size: 11px;
+                            font-size: 14px;
                             color: Palette.danger;
                             horizontal-alignment: center;
                             vertical-alignment: center;
@@ -212,7 +236,7 @@ export component SettingsView inherits Flickable {
                     border-width: 1px;
                     border-color: Palette.card-border;
                     new-name-input := TextInput {
-                        font-size: 12px;
+                        font-size: 14px;
                         color: Palette.text;
                         vertical-alignment: center;
                     }
@@ -245,7 +269,7 @@ export component SettingsView inherits Flickable {
                     border-color: Palette.card-border;
                     TextInput {
                         text <=> root.currency-edit;
-                        font-size: 13px;
+                        font-size: 15px;
                         color: Palette.text;
                         vertical-alignment: center;
                         horizontal-alignment: center;
@@ -278,12 +302,12 @@ export component SettingsView inherits Flickable {
 
                     Text {
                         text: is-dark ? "🌙" : "☀️";
-                        font-size: 18px;
+                        font-size: 20px;
                         vertical-alignment: center;
                     }
                     Text {
                         text: is-dark ? "Dark — switch to light" : "Light — switch to dark";
-                        font-size: 13px;
+                        font-size: 15px;
                         font-weight: 600;
                         color: Palette.text;
                         vertical-alignment: center;
@@ -311,7 +335,7 @@ export component SettingsView inherits Flickable {
 
             if dav-status != "" : Text {
                 text: dav-status;
-                font-size: 12px;
+                font-size: 14px;
                 color: Palette.text2;
             }
         }
@@ -329,7 +353,7 @@ export component SettingsView inherits Flickable {
 
             Text {
                 text: "Saved to user folder";
-                font-size: 10px;
+                font-size: 14px;
                 color: Palette.text3;
             }
         }
@@ -340,7 +364,7 @@ export component SettingsView inherits Flickable {
 
             Text {
                 text: "Import from ~/.oxycash/ folder";
-                font-size: 10px;
+                font-size: 14px;
                 color: Palette.text3;
             }
 

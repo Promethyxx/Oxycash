@@ -42,7 +42,7 @@ component DebtCard inherits Rectangle {
                 border-color: Palette.card-border;
                 TextInput {
                     text: debt.creditor;
-                    font-size: 13px;
+                    font-size: 15px;
                     font-weight: 700;
                     color: Palette.text;
                     vertical-alignment: center;
@@ -59,7 +59,7 @@ component DebtCard inherits Rectangle {
                 TouchArea { clicked => { root.delete(debt.idx); } }
                 Text {
                     text: "x";
-                    font-size: 12px;
+                    font-size: 14px;
                     color: Palette.danger;
                     horizontal-alignment: center;
                     vertical-alignment: center;
@@ -71,7 +71,7 @@ component DebtCard inherits Rectangle {
         HorizontalLayout {
             spacing: 6px;
 
-            Text { text: "Rep"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 28px; }
+            Text { text: "Rep"; font-size: 14px; color: Palette.text3; vertical-alignment: center; width: 28px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -81,14 +81,14 @@ component DebtCard inherits Rectangle {
                 background: #00000020;
                 TextInput {
                     text: debt.rep;
-                    font-size: 11px;
+                    font-size: 14px;
                     color: Palette.text2;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "rep", self.text); }
                 }
             }
 
-            Text { text: "N°"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 18px; }
+            Text { text: "N°"; font-size: 14px; color: Palette.text3; vertical-alignment: center; width: 18px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -98,7 +98,7 @@ component DebtCard inherits Rectangle {
                 background: #00000020;
                 TextInput {
                     text: debt.pursuit;
-                    font-size: 11px;
+                    font-size: 14px;
                     color: Palette.text2;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "pursuit", self.text); }
@@ -110,7 +110,7 @@ component DebtCard inherits Rectangle {
         HorizontalLayout {
             spacing: 6px;
 
-            Text { text: "Due"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 28px; }
+            Text { text: "Due"; font-size: 14px; color: Palette.text3; vertical-alignment: center; width: 28px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -120,7 +120,7 @@ component DebtCard inherits Rectangle {
                 background: #00000020;
                 TextInput {
                     text: debt.balance;
-                    font-size: 11px;
+                    font-size: 14px;
                     color: Palette.danger;
                     horizontal-alignment: right;
                     input-type: decimal;
@@ -129,7 +129,7 @@ component DebtCard inherits Rectangle {
                 }
             }
 
-            Text { text: "Neg"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 26px; }
+            Text { text: "Neg"; font-size: 14px; color: Palette.text3; vertical-alignment: center; width: 26px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -139,7 +139,7 @@ component DebtCard inherits Rectangle {
                 background: #00000020;
                 TextInput {
                     text: debt.balance-ok;
-                    font-size: 11px;
+                    font-size: 14px;
                     color: Palette.green;
                     horizontal-alignment: right;
                     input-type: decimal;
@@ -153,7 +153,7 @@ component DebtCard inherits Rectangle {
         HorizontalLayout {
             spacing: 6px;
 
-            Text { text: "Status"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 40px; }
+            Text { text: "Status"; font-size: 14px; color: Palette.text3; vertical-alignment: center; width: 40px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -163,14 +163,14 @@ component DebtCard inherits Rectangle {
                 background: #00000020;
                 TextInput {
                     text: debt.status;
-                    font-size: 11px;
+                    font-size: 14px;
                     color: Palette.text2;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "status", self.text); }
                 }
             }
 
-            Text { text: "Date"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 30px; }
+            Text { text: "Date"; font-size: 14px; color: Palette.text3; vertical-alignment: center; width: 30px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -180,7 +180,7 @@ component DebtCard inherits Rectangle {
                 background: #00000020;
                 TextInput {
                     text: debt.date;
-                    font-size: 11px;
+                    font-size: 14px;
                     color: Palette.text3;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "date", self.text); }
@@ -208,7 +208,7 @@ export component DebtsView inherits Flickable {
 
         Text {
             text: "Debts";
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             color: Palette.text;
         }
@@ -228,20 +228,20 @@ export component DebtsView inherits Flickable {
                 VerticalLayout {
                     horizontal-stretch: 1;
                     spacing: 2px;
-                    Text { text: "Total due";       font-size: 9px;  font-weight: 600; color: Palette.text3; }
-                    Text { text: total-due + " " + currency; font-size: 16px; font-weight: 700; color: Palette.danger; }
+                    Text { text: "Total due";       font-size: 14px;  font-weight: 600; color: Palette.text3; }
+                    Text { text: total-due + " " + currency; font-size: 18px; font-weight: 700; color: Palette.danger; }
                 }
                 VerticalLayout {
                     horizontal-stretch: 1;
                     spacing: 2px;
-                    Text { text: "Negotiated";      font-size: 9px;  font-weight: 600; color: Palette.text3; }
-                    Text { text: total-neg + " " + currency; font-size: 16px; font-weight: 700; color: Palette.green; }
+                    Text { text: "Negotiated";      font-size: 14px;  font-weight: 600; color: Palette.text3; }
+                    Text { text: total-neg + " " + currency; font-size: 18px; font-weight: 700; color: Palette.green; }
                 }
                 VerticalLayout {
                     horizontal-stretch: 1;
                     spacing: 2px;
-                    Text { text: "Settled";         font-size: 9px;  font-weight: 600; color: Palette.text3; }
-                    Text { text: settled;            font-size: 16px; font-weight: 700; color: Palette.teal; }
+                    Text { text: "Settled";         font-size: 14px;  font-weight: 600; color: Palette.text3; }
+                    Text { text: settled;            font-size: 18px; font-weight: 700; color: Palette.teal; }
                 }
             }
         }
@@ -264,7 +264,7 @@ export component DebtsView inherits Flickable {
             TouchArea { clicked => { root.add-debt(); } }
             Text {
                 text: "+ Add debt";
-                font-size: 12px;
+                font-size: 14px;
                 font-weight: 600;
                 color: Palette.text3;
                 horizontal-alignment: center;

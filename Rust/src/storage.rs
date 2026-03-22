@@ -319,19 +319,27 @@ impl Storage {
         SyncStatus::Local
     }
 
+    /// Save: local write (sync) + WebDAV push (background thread, non-blocking)
     pub fn save(&mut self) -> SyncStatus {
         let prof = self.active_profile().clone();
         let slug = prof.slug.clone();
 
+        // Local write — always synchronous, fast
         let dir = local_dir();
         let _ = std::fs::create_dir_all(&dir);
-        let _ = std::fs::write(local_data_file(&slug), self.data.to_json());
+        let json = self.data.to_json();
+        let _ = std::fs::write(local_data_file(&slug), &json);
 
+        // WebDAV push — background thread so UI doesn't block
         if dav_full_url(&prof).is_some() {
-            let ok = dav_save(&prof, &self.data);
-            self.dav_ok = ok;
-            if ok { return SyncStatus::Dav; }
-            return SyncStatus::DavError;
+            let data_clone = self.data.clone();
+            let prof_clone = prof.clone();
+            std::thread::spawn(move || {
+                let _ = dav_save(&prof_clone, &data_clone);
+            });
+            // Optimistic: assume it will work (last known state)
+            self.dav_ok = true;
+            return SyncStatus::Dav;
         }
         self.dav_ok = false;
         SyncStatus::Local

@@ -1,0 +1,197 @@
+// oxycash-rs - ui/viability_view.slint
+// Basic viability table: columns + paliers + balance
+
+import { Palette } from "palette.slint";
+
+export struct ViaColumn {
+    name: string,
+    is-income: bool,
+    delta-type: string,  // "fixed" | "pct"
+    idx: int,
+}
+
+export struct ViaPalierCell {
+    value: float,
+}
+
+export struct ViaPalier {
+    cells: [ViaPalierCell],
+    balance: float,
+    idx: int,
+}
+
+export component ViabilityView inherits Flickable {
+    viewport-width: self.width;
+    in property <string>       currency: "CHF";
+    in property <[ViaColumn]>  columns: [];
+    in property <[ViaPalier]>  paliers: [];
+    in property <int>          n-paliers: 5;
+
+    callback add-palier();
+    callback delete-palier(int);
+    callback update-cell(int, int, string);  // palier-idx, col-idx, value
+    callback generate-paliers();
+    callback clear-paliers();
+    callback add-column();
+    callback delete-column(int);
+    callback update-column-name(int, string);
+    callback toggle-column-income(int);
+
+    VerticalLayout {
+        padding: 14px;
+        spacing: 10px;
+
+        Text { text: "Viability"; font-size: 24px; font-weight: 700; color: Palette.text; }
+        Text { text: "Monthly simulation by salary bracket"; font-size: 15px; color: Palette.text2; }
+
+        // ── Columns config ──
+        Rectangle {
+            border-radius: 10px; background: Palette.card;
+            border-width: 1px; border-color: Palette.card-border;
+
+            VerticalLayout {
+                padding: 12px; spacing: 6px;
+
+                Text { text: "Columns"; font-size: 15px; font-weight: 700; color: Palette.text; }
+
+                for col in columns : HorizontalLayout {
+                    spacing: 4px; height: 32px;
+
+                    // Income indicator
+                    Rectangle {
+                        width: 20px; height: 20px; border-radius: 4px;
+                        background: col.is-income ? Palette.green.with-alpha(0.2) : Palette.danger.with-alpha(0.2);
+                        TouchArea { clicked => { root.toggle-column-income(col.idx); } }
+                        Text {
+                            text: col.is-income ? "+" : "−";
+                            font-size: 16px; font-weight: 700;
+                            color: col.is-income ? Palette.green : Palette.danger;
+                            horizontal-alignment: center; vertical-alignment: center;
+                        }
+                    }
+
+                    // Name
+                    Rectangle {
+                        horizontal-stretch: 1; height: 28px; border-radius: 5px;
+                        border-width: 1px; border-color: Palette.card-border;
+                        TextInput {
+                            text: col.name; font-size: 15px; color: Palette.text;
+                            vertical-alignment: center;
+                            accepted => { root.update-column-name(col.idx, self.text); }
+                        }
+                    }
+
+                    // Type badge
+                    Text {
+                        text: col.delta-type == "pct" ? "%" : "fix";
+                        font-size: 14px; color: Palette.text3;
+                        width: 24px; vertical-alignment: center; horizontal-alignment: center;
+                    }
+
+                    // Delete
+                    Rectangle {
+                        width: 24px; height: 24px; border-radius: 4px;
+                        TouchArea { clicked => { root.delete-column(col.idx); } }
+                        Text { text: "x"; font-size: 14px; color: Palette.danger;
+                            horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 8px; height: 32px;
+                    Rectangle {
+                        horizontal-stretch: 1; height: 32px; border-radius: 8px;
+                        border-width: 1px; border-color: Palette.card-border;
+                        TouchArea { clicked => { root.add-column(); } }
+                        Text { text: "+ Column"; font-size: 14px; color: Palette.text3;
+                            horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                }
+            }
+        }
+
+        // ── Generate controls ──
+        HorizontalLayout {
+            spacing: 8px; height: 36px;
+
+            Rectangle {
+                horizontal-stretch: 1; height: 36px; border-radius: 8px; background: Palette.teal;
+                TouchArea { clicked => { root.generate-paliers(); } }
+                Text { text: "▶ Generate"; font-size: 15px; font-weight: 600; color: #1a1a1a;
+                    horizontal-alignment: center; vertical-alignment: center; }
+            }
+
+            Rectangle {
+                width: 100px; height: 36px; border-radius: 8px;
+                border-width: 1px; border-color: Palette.danger;
+                TouchArea { clicked => { root.clear-paliers(); } }
+                Text { text: "Clear all"; font-size: 14px; color: Palette.danger;
+                    horizontal-alignment: center; vertical-alignment: center; }
+            }
+        }
+
+        // ── Paliers table ──
+        if paliers.length == 0 : Text {
+            text: "No brackets yet — click ▶ Generate";
+            font-size: 14px; color: Palette.text3; horizontal-alignment: center;
+        }
+
+        if paliers.length > 0 : Rectangle {
+            border-radius: 10px; background: Palette.card;
+            border-width: 1px; border-color: Palette.card-border;
+
+            VerticalLayout {
+                padding: 12px; spacing: 2px;
+
+                // Header row
+                HorizontalLayout {
+                    spacing: 2px; height: 24px;
+                    for col in columns : Text {
+                        text: col.name; font-size: 14px; font-weight: 600;
+                        color: col.is-income ? Palette.green : Palette.text3;
+                        horizontal-stretch: 1; horizontal-alignment: center;
+                    }
+                    Text { text: "Balance"; font-size: 14px; font-weight: 600; color: Palette.gold;
+                        width: 70px; horizontal-alignment: right; }
+                }
+
+                Rectangle { height: 1px; background: Palette.card-border; }
+
+                // Data rows
+                for pal in paliers : HorizontalLayout {
+                    spacing: 2px; height: 28px;
+
+                    for cell[ci] in pal.cells : Rectangle {
+                        horizontal-stretch: 1; height: 26px; border-radius: 4px;
+                        border-width: 1px; border-color: Palette.card-border;
+                        TextInput {
+                            text: cell.value; font-size: 14px;
+                            color: Palette.text; horizontal-alignment: center;
+                            input-type: decimal; vertical-alignment: center;
+                            accepted => { root.update-cell(pal.idx, ci, self.text); }
+                        }
+                    }
+
+                    Text {
+                        text: pal.balance; font-size: 14px; font-weight: 700;
+                        color: pal.balance >= 0.0 ? Palette.green : Palette.danger;
+                        width: 70px; horizontal-alignment: right; vertical-alignment: center;
+                    }
+                }
+
+                Rectangle { height: 1px; background: Palette.card-border; }
+
+                // Add palier
+                Rectangle {
+                    height: 32px; border-radius: 8px;
+                    border-width: 1px; border-color: Palette.card-border;
+                    TouchArea { clicked => { root.add-palier(); } }
+                    Text { text: "+ Add bracket"; font-size: 14px; color: Palette.text3;
+                        horizontal-alignment: center; vertical-alignment: center; }
+                }
+            }
+        }
+
+        Rectangle { height: 40px; }
+    }
+}

@@ -20,14 +20,14 @@ component SummaryCard inherits Rectangle {
 
         Text {
             text: label;
-            font-size: 9px;
+            font-size: 14px;
             font-weight: 600;
             color: Palette.text3;
         }
 
         Text {
             text: value;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
             color: value-color;
         }
@@ -49,10 +49,10 @@ component MonthRow inherits Rectangle {
         padding-left: 4px;
         padding-right: 4px;
 
-        Text { text: month;    font-size: 10px; color: Palette.text3;  width: 36px; horizontal-alignment: center; }
-        Text { text: income;   font-size: 10px; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
-        Text { text: expenses; font-size: 10px; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
-        Text { text: forecast; font-size: 10px; color: forecast-color; font-weight: 700; horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: month;    font-size: 14px; color: Palette.text3;  width: 36px; horizontal-alignment: center; }
+        Text { text: income;   font-size: 14px; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: expenses; font-size: 14px; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: forecast; font-size: 14px; color: forecast-color; font-weight: 700; horizontal-stretch: 1; horizontal-alignment: right; }
     }
 }
 
@@ -92,7 +92,7 @@ export component ChartsView inherits Flickable {
 
         Text {
             text: "Charts";
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             color: Palette.text;
         }
@@ -131,14 +131,14 @@ export component ChartsView inherits Flickable {
 
                 Text {
                     text: "Annual cumulative";
-                    font-size: 13px;
+                    font-size: 15px;
                     font-weight: 600;
                     color: Palette.text2;
                     horizontal-stretch: 1;
                 }
                 Text {
                     text: annual-cumul + " " + currency;
-                    font-size: 20px;
+                    font-size: 22px;
                     font-weight: 700;
                     color: annual-cumul-color;
                     horizontal-alignment: right;
@@ -165,9 +165,9 @@ export component ChartsView inherits Flickable {
                     height: 24px;
 
                     Text { text: "";         width: 36px; }
-                    Text { text: "Income";   font-size: 9px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: "Exp.";     font-size: 9px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: "Forecast"; font-size: 9px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Income";   font-size: 14px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Exp.";     font-size: 14px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Forecast"; font-size: 14px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
                 }
 
                 Rectangle { height: 1px; background: Palette.card-border; }
@@ -189,10 +189,10 @@ export component ChartsView inherits Flickable {
                     padding-right: 4px;
                     height: 28px;
 
-                    Text { text: "Total"; font-size: 10px; font-weight: 700; color: Palette.text; width: 36px; }
-                    Text { text: total-income;   font-size: 10px; font-weight: 700; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: total-paid;     font-size: 10px; font-weight: 700; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: total-forecast; font-size: 10px; font-weight: 700; color: forecast-color; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Total"; font-size: 14px; font-weight: 700; color: Palette.text; width: 36px; }
+                    Text { text: total-income;   font-size: 14px; font-weight: 700; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: total-paid;     font-size: 14px; font-weight: 700; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: total-forecast; font-size: 14px; font-weight: 700; color: forecast-color; horizontal-stretch: 1; horizontal-alignment: right; }
                 }
             }
         }

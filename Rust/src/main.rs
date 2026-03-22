@@ -4,8 +4,8 @@ mod model;
 mod storage;
 mod theme;
 
-use model::{detect_budget_month, fmt, fmt_sign, today, apply_recurring, Month, Payment, Line, Recurring, Dette, EpargneSondage, FraisLine, MONTHS};
-use storage::{Storage, SyncStatus};
+use model::{detect_budget_month, fmt, fmt_sign, today, apply_recurring, Month, Payment, Line, Recurring, Dette, EpargneSondage, SavingsProject, SavingsRow, FraisLine, MONTHS};
+use storage::{Storage, SyncStatus, save_config};
 use theme::{DARK, LIGHT};
 
 use std::sync::{Arc, Mutex};
@@ -445,17 +445,36 @@ fn push_debts(window: &AppWindow, state: &AppState) {
     window.set_debts_list(ModelRc::new(VecModel::from(items)));
 }
 
-// --- Push savings data to window (port of build_epargne_view — sondages)
+// --- Push savings data to window (projects with sub-rows)
 fn push_savings(window: &AppWindow, state: &AppState) {
-    let sondages = &state.storage.data.epargne.sondages;
-    let items: Vec<SavingsEntry> = sondages.iter().enumerate().map(|(i, s)| {
-        let pct = if s.goal > 0.01 { ((s.total / s.goal) * 100.0) as i32 } else { 0 };
+    let projects = &state.storage.data.epargne.savings;
+    let items: Vec<SavingsEntry> = projects.iter().enumerate().map(|(i, p)| {
+        let has_rows = !p.rows.is_empty();
+        let rows_total: f64 = p.rows.iter().map(|r| r.montant).sum();
+        let rows_cible: f64 = p.rows.iter().map(|r| r.cible).sum();
+        let total = if has_rows { rows_total } else { p.montant };
+        let cible = if has_rows && rows_cible > 0.01 { rows_cible } else { p.cible };
+        let pct = if cible > 0.01 { ((total / cible) * 100.0).min(100.0) as i32 } else { 0 };
+
+        let row_items: Vec<SavingsRowItem> = p.rows.iter().enumerate().map(|(ri, r)| {
+            let rpct = if r.cible > 0.01 { ((r.montant / r.cible) * 100.0).min(100.0) as i32 } else { 0 };
+            SavingsRowItem {
+                name: r.name.clone().into(),
+                montant: r.montant as f32,
+                cible: r.cible as f32,
+                percent: rpct,
+                idx: ri as i32,
+            }
+        }).collect();
+
         SavingsEntry {
-            label:   s.name.clone().into(),
-            target:  s.goal as f32,
-            current: s.total as f32,
+            label:   p.label.clone().into(),
+            montant: total as f32,
+            cible:   cible as f32,
             percent: pct,
             idx:     i as i32,
+            open:    p.open,
+            rows:    ModelRc::new(VecModel::from(row_items)),
         }
     }).collect();
     window.set_savings_list(ModelRc::new(VecModel::from(items)));
@@ -490,6 +509,38 @@ fn push_expenses(window: &AppWindow, state: &AppState) {
     window.set_expenses_fixed(make_expense_section("Fixed", &frais.fixes));
     window.set_expenses_occasional(make_expense_section("Occasional", &frais.ponctuels));
     window.set_expenses_withdrawals(make_expense_section("Withdrawals", &frais.retraits));
+}
+
+// --- Push viability data to window
+fn push_viability(window: &AppWindow, state: &AppState) {
+    let vc = &state.storage.data.viabilite;
+
+    let cols: Vec<ViaColumn> = vc.colonnes.iter().enumerate().map(|(i, c)| {
+        ViaColumn {
+            name: c.name.clone().into(),
+            is_income: c.is_income,
+            delta_type: c.delta_type.clone().into(),
+            idx: i as i32,
+        }
+    }).collect();
+    window.set_via_columns(ModelRc::new(VecModel::from(cols)));
+
+    let pals: Vec<ViaPalier> = vc.paliers.iter().enumerate().map(|(pi, p)| {
+        let cells: Vec<ViaPalierCell> = p.valeurs.iter().map(|&v| {
+            ViaPalierCell { value: v as f32 }
+        }).collect();
+        let balance: f64 = vc.colonnes.iter().enumerate().map(|(ci, c)| {
+            let v = p.valeurs.get(ci).copied().unwrap_or(0.0);
+            if c.is_income { v } else { -v }
+        }).sum();
+        ViaPalier {
+            cells: ModelRc::new(VecModel::from(cells)),
+            balance: balance as f32,
+            idx: pi as i32,
+        }
+    }).collect();
+    window.set_via_paliers(ModelRc::new(VecModel::from(pals)));
+    window.set_via_n_paliers(vc.n_paliers as i32);
 }
 
 // --- Apply theme colors to Palette global
@@ -558,11 +609,13 @@ fn run() {
         window.set_profile_name(st.storage.active_profile().name.clone().into());
         window.set_currency(st.storage.cfg.currency.clone().into());
         window.set_sync_status(status_str(st.storage.status()).into());
+        window.set_lang_label(if st.storage.cfg.lang == "en" { "FR" } else { "EN" }.into());
         push_month(&window, &st);
         push_charts(&window, &st);
         push_debts(&window, &st);
         push_savings(&window, &st);
         push_expenses(&window, &st);
+        push_viability(&window, &st);
         push_settings(&window, &st);
         apply_theme(&window, true);
     }
@@ -588,8 +641,9 @@ fn run() {
                     Tab::Charts   => push_charts(&w, &st),
                     Tab::Debts    => push_debts(&w, &st),
                     Tab::Savings  => push_savings(&w, &st),
-                    Tab::Expenses => push_expenses(&w, &st),
-                    Tab::Config   => push_settings(&w, &st),
+                    Tab::Expenses  => push_expenses(&w, &st),
+                    Tab::Viability => push_viability(&w, &st),
+                    Tab::Config    => push_settings(&w, &st),
                     _ => {}
                 }
             }
@@ -662,6 +716,9 @@ fn run() {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
             st.sec_lines_mut(si as usize)[li as usize].name = val.to_string();
+            st.sec_lines_mut(si as usize).sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+            st.lines_expanded[si as usize] = vec![];
+            st.ensure_expanded();
             st.storage.save();
             push_month(&w, &st);
         });
@@ -691,6 +748,7 @@ fn run() {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
             st.sec_lines_mut(si as usize).push(Line::new("New entry"));
+            st.sec_lines_mut(si as usize).sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
             st.sections_open[si as usize] = true;
             st.lines_expanded[si as usize] = vec![];
             st.ensure_expanded();
@@ -849,6 +907,47 @@ fn run() {
         });
     }
 
+    // Toggle lang (visual only for now)
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_toggle_lang(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let new_lang = if st.storage.cfg.lang == "en" { "fr" } else { "en" };
+            st.storage.set_lang(new_lang);
+            // Update label: show the OTHER lang as the button text
+            w.set_lang_label(if new_lang == "en" { "FR" } else { "EN" }.into());
+            show_toast(&w, &format!("🌐 {}", new_lang.to_uppercase()));
+        });
+    }
+
+    // Font scale down
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_font_scale_down(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            st.storage.cfg.font_scale = (st.storage.cfg.font_scale - 2).max(-6);
+            save_config(&st.storage.cfg);
+            show_toast(&w, &format!("Font {}", st.storage.cfg.font_scale));
+        });
+    }
+
+    // Font scale up
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_font_scale_up(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            st.storage.cfg.font_scale = (st.storage.cfg.font_scale + 2).min(8);
+            save_config(&st.storage.cfg);
+            show_toast(&w, &format!("Font +{}", st.storage.cfg.font_scale));
+        });
+    }
+
     // Go config
     {
         let ww = window.as_weak();
@@ -912,22 +1011,20 @@ fn run() {
         });
     }
 
-    // Add saving
+    // Add savings project
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
         window.on_add_saving(move || {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
-            st.storage.data.epargne.sondages.push(EpargneSondage {
-                name: "New".into(), total: 0.0, goal: 0.0,
-            });
+            st.storage.data.epargne.savings.push(SavingsProject::default());
             st.storage.save();
             push_savings(&w, &st);
         });
     }
 
-    // Delete saving
+    // Delete savings project
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
@@ -935,15 +1032,15 @@ fn run() {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
             let i = idx as usize;
-            if i < st.storage.data.epargne.sondages.len() {
-                st.storage.data.epargne.sondages.remove(i);
+            if i < st.storage.data.epargne.savings.len() {
+                st.storage.data.epargne.savings.remove(i);
                 st.storage.save();
                 push_savings(&w, &st);
             }
         });
     }
 
-    // Update saving field
+    // Update savings project field
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
@@ -951,18 +1048,267 @@ fn run() {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
             let i = idx as usize;
-            if i < st.storage.data.epargne.sondages.len() {
-                let s = &mut st.storage.data.epargne.sondages[i];
+            if i < st.storage.data.epargne.savings.len() {
+                let p = &mut st.storage.data.epargne.savings[i];
                 let f: String = field.into();
                 let v: String = val.into();
                 match f.as_str() {
-                    "name"  => s.name = v,
-                    "total" => { if let Ok(n) = v.parse::<f64>() { s.total = n; } }
-                    "goal"  => { if let Ok(n) = v.parse::<f64>() { s.goal = n; } }
+                    "label"   => p.label = v,
+                    "montant" => { if let Ok(n) = v.parse::<f64>() { p.montant = n; } }
+                    "cible"   => { if let Ok(n) = v.parse::<f64>() { p.cible = n; } }
                     _ => {}
                 }
                 st.storage.save();
                 push_savings(&w, &st);
+            }
+        });
+    }
+
+    // Toggle savings project open/close
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_toggle_saving(move |idx| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.epargne.savings.len() {
+                st.storage.data.epargne.savings[i].open = !st.storage.data.epargne.savings[i].open;
+                st.storage.save();
+                push_savings(&w, &st);
+            }
+        });
+    }
+
+    // Add savings row
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_add_saving_row(move |pi| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = pi as usize;
+            if i < st.storage.data.epargne.savings.len() {
+                st.storage.data.epargne.savings[i].rows.push(SavingsRow::default());
+                st.storage.data.epargne.savings[i].rows.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+                st.storage.save();
+                push_savings(&w, &st);
+            }
+        });
+    }
+
+    // Delete savings row
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_delete_saving_row(move |pi, ri| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let p = pi as usize;
+            let r = ri as usize;
+            if p < st.storage.data.epargne.savings.len() && r < st.storage.data.epargne.savings[p].rows.len() {
+                st.storage.data.epargne.savings[p].rows.remove(r);
+                st.storage.save();
+                push_savings(&w, &st);
+            }
+        });
+    }
+
+    // Update savings row field
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_update_saving_row_field(move |pi, ri, field, val| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let p = pi as usize;
+            let r = ri as usize;
+            if p < st.storage.data.epargne.savings.len() && r < st.storage.data.epargne.savings[p].rows.len() {
+                let row = &mut st.storage.data.epargne.savings[p].rows[r];
+                let f: String = field.into();
+                let v: String = val.into();
+                match f.as_str() {
+                    "name"    => {
+                        row.name = v;
+                        st.storage.data.epargne.savings[p].rows.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+                    }
+                    "montant" => { if let Ok(n) = v.parse::<f64>() { row.montant = n; } }
+                    "cible"   => { if let Ok(n) = v.parse::<f64>() { row.cible = n; } }
+                    _ => {}
+                }
+                st.storage.save();
+                push_savings(&w, &st);
+            }
+        });
+    }
+
+    // ── Viability callbacks ────────────────────────────────────────────
+
+    // Add palier
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_add_via_palier(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let nc = st.storage.data.viabilite.colonnes.len();
+            use model::ViabilitePalier;
+            st.storage.data.viabilite.paliers.push(ViabilitePalier { valeurs: vec![0.0; nc] });
+            st.storage.save();
+            push_viability(&w, &st);
+        });
+    }
+
+    // Delete palier
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_delete_via_palier(move |idx| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.viabilite.paliers.len() {
+                st.storage.data.viabilite.paliers.remove(i);
+                st.storage.save();
+                push_viability(&w, &st);
+            }
+        });
+    }
+
+    // Update cell
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_update_via_cell(move |pi, ci, val| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let p = pi as usize;
+            let c = ci as usize;
+            let v: String = val.into();
+            if p < st.storage.data.viabilite.paliers.len() {
+                let pal = &mut st.storage.data.viabilite.paliers[p];
+                while pal.valeurs.len() <= c { pal.valeurs.push(0.0); }
+                if let Ok(n) = v.parse::<f64>() { pal.valeurs[c] = n; }
+                st.storage.save();
+                push_viability(&w, &st);
+            }
+        });
+    }
+
+    // Generate paliers
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_generate_via(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let vc = &st.storage.data.viabilite;
+            let n = vc.n_paliers as usize;
+            let cols = &vc.colonnes;
+            if cols.is_empty() { return; }
+
+            // Start from base values in colonnes
+            let base: Vec<f64> = cols.iter().map(|c| c.valeur).collect();
+            let mut paliers = vec![];
+            for step in 0..n {
+                let vals: Vec<f64> = cols.iter().enumerate().map(|(ci, c)| {
+                    let b = base[ci];
+                    if c.delta_type == "pct" {
+                        (b * (1.0 + c.delta_val / 100.0).powi(step as i32) * 100.0).round() / 100.0
+                    } else {
+                        ((b + c.delta_val * step as f64) * 100.0).round() / 100.0
+                    }
+                }).collect();
+                use model::ViabilitePalier;
+                paliers.push(ViabilitePalier { valeurs: vals });
+            }
+            st.storage.data.viabilite.paliers = paliers;
+            st.storage.save();
+            push_viability(&w, &st);
+        });
+    }
+
+    // Clear paliers
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_clear_via(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            st.storage.data.viabilite.paliers.clear();
+            st.storage.save();
+            push_viability(&w, &st);
+        });
+    }
+
+    // Add column
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_add_via_column(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            use model::ViabiliteColonne;
+            st.storage.data.viabilite.colonnes.push(ViabiliteColonne {
+                name: "New".into(), valeur: 0.0, is_income: false,
+                delta_type: "fixed".into(), delta_val: 0.0,
+            });
+            // Extend existing paliers
+            for p in &mut st.storage.data.viabilite.paliers {
+                p.valeurs.push(0.0);
+            }
+            st.storage.save();
+            push_viability(&w, &st);
+        });
+    }
+
+    // Delete column
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_delete_via_column(move |idx| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.viabilite.colonnes.len() {
+                st.storage.data.viabilite.colonnes.remove(i);
+                for p in &mut st.storage.data.viabilite.paliers {
+                    if i < p.valeurs.len() { p.valeurs.remove(i); }
+                }
+                st.storage.save();
+                push_viability(&w, &st);
+            }
+        });
+    }
+
+    // Update column name
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_update_via_column_name(move |idx, name| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.viabilite.colonnes.len() {
+                st.storage.data.viabilite.colonnes[i].name = name.into();
+                st.storage.save();
+                push_viability(&w, &st);
+            }
+        });
+    }
+
+    // Toggle column income
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_toggle_via_column_income(move |idx| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.viabilite.colonnes.len() {
+                st.storage.data.viabilite.colonnes[i].is_income = !st.storage.data.viabilite.colonnes[i].is_income;
+                st.storage.save();
+                push_viability(&w, &st);
             }
         });
     }

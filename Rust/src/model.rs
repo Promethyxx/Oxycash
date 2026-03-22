@@ -147,13 +147,46 @@ pub struct Wishlist {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SavingsRow {
+    #[serde(default = "default_nouveau")]
+    pub name: String,
+    #[serde(default)]
+    pub montant: f64,
+    #[serde(default)]
+    pub cible: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SavingsProject {
+    #[serde(default = "default_projet")]
+    pub label: String,
+    #[serde(default)]
+    pub montant: f64,
+    #[serde(default)]
+    pub cible: f64,
+    #[serde(default)]
+    pub rows: Vec<SavingsRow>,
+    #[serde(default = "default_true")]
+    pub open: bool,
+}
+
+fn default_projet() -> String { "Projet".to_string() }
+fn default_true() -> bool { true }
+
+impl Default for SavingsProject {
+    fn default() -> Self {
+        Self { label: "Projet".into(), montant: 0.0, cible: 0.0, rows: vec![], open: true }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Epargne {
     #[serde(default)]
     pub sondages: Vec<EpargneSondage>,
     #[serde(default)]
     pub wishlists: Vec<Wishlist>,
     #[serde(default)]
-    pub savings: Vec<serde_json::Value>, // flexible, not yet typed
+    pub savings: Vec<SavingsProject>,
 }
 
 fn default_nouveau() -> String {
