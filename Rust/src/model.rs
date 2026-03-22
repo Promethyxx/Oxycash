@@ -360,14 +360,17 @@ pub fn detect_budget_month() -> &'static str {
 
 // --- Formatting
 pub fn fmt(n: f64) -> String {
-    let s = format!("{:.2}", n);
+    // Treat near-zero as 0 to avoid "-0"
+    let v = if n.abs() < 0.01 { 0.0 } else { n };
+    let s = format!("{:.2}", v);
     if s.ends_with("00") { return s[..s.len()-3].to_string(); }
     if s.ends_with('0')  { return s[..s.len()-1].to_string(); }
     s
 }
 
 pub fn fmt_sign(n: f64) -> String {
-    if n >= 0.0 { format!("+{}", fmt(n)) } else { fmt(n) }
+    // No "+" prefix for positive values
+    fmt(n)
 }
 
 pub fn today() -> String {

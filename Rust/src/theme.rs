@@ -24,9 +24,9 @@ pub struct ThemePalette {
 
 pub const DARK: ThemePalette = ThemePalette {
     bg:          "#0D0D0D",
-    bg2:         "#161614",
-    card:        "#1E1E1B",
-    card_border: "#2A2A26",
+    bg2:         "#131311",
+    card:        "#161614",
+    card_border: "#222220",
     text:        "#E8E4DE",
     text2:       "#9A9690",
     text3:       "#4A4744",

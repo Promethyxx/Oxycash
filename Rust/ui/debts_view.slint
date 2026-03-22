@@ -1,5 +1,5 @@
 // oxycash-rs - ui/debts_view.slint
-// Port of build_dettes_view() in special_views.py
+// Port of build_dettes_view() in special_views.py — fully editable
 
 import { Palette } from "palette.slint";
 
@@ -11,9 +11,187 @@ export struct DebtItem {
     balance-ok: float,
     status: string,
     date: string,
+    idx: int,
+}
+
+component DebtCard inherits Rectangle {
+    in property <DebtItem> debt;
+    in property <string>   currency;
+
+    callback update-field(int, string, string);  // idx, field-name, value
+    callback delete(int);
+
+    border-radius: 10px;
+    background: Palette.card;
+    border-width: 1px;
+    border-color: debt.balance-ok >= debt.balance && debt.balance > 0.0 ? Palette.green : Palette.card-border;
+
+    VerticalLayout {
+        padding: 12px;
+        spacing: 6px;
+
+        // Row 1: Creditor + delete
+        HorizontalLayout {
+            spacing: 8px;
+
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 30px;
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                TextInput {
+                    text: debt.creditor;
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: Palette.text;
+                    vertical-alignment: center;
+                    horizontal-alignment: left;
+                    accepted => { root.update-field(debt.idx, "creditor", self.text); }
+                }
+            }
+
+            Rectangle {
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                background: transparent;
+                TouchArea { clicked => { root.delete(debt.idx); } }
+                Text {
+                    text: "x";
+                    font-size: 12px;
+                    color: Palette.danger;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        // Row 2: Rep + Pursuit
+        HorizontalLayout {
+            spacing: 6px;
+
+            Text { text: "Rep"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 28px; }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 28px;
+                border-radius: 5px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                background: #00000020;
+                TextInput {
+                    text: debt.rep;
+                    font-size: 11px;
+                    color: Palette.text2;
+                    vertical-alignment: center;
+                    accepted => { root.update-field(debt.idx, "rep", self.text); }
+                }
+            }
+
+            Text { text: "N°"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 18px; }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 28px;
+                border-radius: 5px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                background: #00000020;
+                TextInput {
+                    text: debt.pursuit;
+                    font-size: 11px;
+                    color: Palette.text2;
+                    vertical-alignment: center;
+                    accepted => { root.update-field(debt.idx, "pursuit", self.text); }
+                }
+            }
+        }
+
+        // Row 3: Balance due + Balance negotiated
+        HorizontalLayout {
+            spacing: 6px;
+
+            Text { text: "Due"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 28px; }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 28px;
+                border-radius: 5px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                background: #00000020;
+                TextInput {
+                    text: debt.balance;
+                    font-size: 11px;
+                    color: Palette.danger;
+                    horizontal-alignment: right;
+                    input-type: decimal;
+                    vertical-alignment: center;
+                    accepted => { root.update-field(debt.idx, "balance", self.text); }
+                }
+            }
+
+            Text { text: "Neg"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 26px; }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 28px;
+                border-radius: 5px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                background: #00000020;
+                TextInput {
+                    text: debt.balance-ok;
+                    font-size: 11px;
+                    color: Palette.green;
+                    horizontal-alignment: right;
+                    input-type: decimal;
+                    vertical-alignment: center;
+                    accepted => { root.update-field(debt.idx, "balance-ok", self.text); }
+                }
+            }
+        }
+
+        // Row 4: Status + Date
+        HorizontalLayout {
+            spacing: 6px;
+
+            Text { text: "Status"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 40px; }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 28px;
+                border-radius: 5px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                background: #00000020;
+                TextInput {
+                    text: debt.status;
+                    font-size: 11px;
+                    color: Palette.text2;
+                    vertical-alignment: center;
+                    accepted => { root.update-field(debt.idx, "status", self.text); }
+                }
+            }
+
+            Text { text: "Date"; font-size: 10px; color: Palette.text3; vertical-alignment: center; width: 30px; }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 28px;
+                border-radius: 5px;
+                border-width: 1px;
+                border-color: Palette.card-border;
+                background: #00000020;
+                TextInput {
+                    text: debt.date;
+                    font-size: 11px;
+                    color: Palette.text3;
+                    vertical-alignment: center;
+                    accepted => { root.update-field(debt.idx, "date", self.text); }
+                }
+            }
+        }
+    }
 }
 
 export component DebtsView inherits Flickable {
+    viewport-width: self.width;
     in property <string>     currency:     "CHF";
     in property <string>     total-due:    "0";
     in property <string>     total-neg:    "0";
@@ -22,9 +200,7 @@ export component DebtsView inherits Flickable {
 
     callback add-debt();
     callback delete-debt(int);
-    callback save-requested();
-
-    viewport-height: 600px;
+    callback update-debt-field(int, string, string);  // idx, field, value
 
     VerticalLayout {
         padding: 14px;
@@ -71,47 +247,11 @@ export component DebtsView inherits Flickable {
         }
 
         // Debt list
-        for debt[i] in debts : Rectangle {
-            border-radius: 10px;
-            background: Palette.card;
-            border-width: 1px;
-            border-color: Palette.card-border;
-
-            VerticalLayout {
-                padding: 12px;
-                spacing: 6px;
-
-                HorizontalLayout {
-                    spacing: 8px;
-
-                    Text {
-                        text: debt.creditor;
-                        font-size: 13px;
-                        font-weight: 700;
-                        color: Palette.text;
-                        horizontal-stretch: 1;
-                    }
-                    Text {
-                        text: debt.balance + " " + currency;
-                        font-size: 13px;
-                        font-weight: 700;
-                        color: Palette.danger;
-                    }
-                }
-
-                HorizontalLayout {
-                    spacing: 12px;
-
-                    Text { text: "Rep: " + debt.rep;       font-size: 11px; color: Palette.text2; }
-                    Text { text: "Neg: " + debt.balance-ok + " " + currency; font-size: 11px; color: Palette.green; }
-                }
-
-                if debt.status != "" : Text {
-                    text: debt.status;
-                    font-size: 11px;
-                    color: Palette.text3;
-                }
-            }
+        for debt in debts : DebtCard {
+            debt: debt;
+            currency: currency;
+            update-field(idx, field, val) => { root.update-debt-field(idx, field, val); }
+            delete(idx) => { root.delete-debt(idx); }
         }
 
         // Add button

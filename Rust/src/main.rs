@@ -4,8 +4,9 @@ mod model;
 mod storage;
 mod theme;
 
-use model::{detect_budget_month, fmt, fmt_sign, today, Month, Payment, Line, MONTHS};
+use model::{detect_budget_month, fmt, fmt_sign, today, apply_recurring, Month, Payment, Line, Recurring, Dette, EpargneSondage, FraisLine, MONTHS};
 use storage::{Storage, SyncStatus};
+use theme::{DARK, LIGHT};
 
 use std::sync::{Arc, Mutex};
 use slint::{SharedString, VecModel, ModelRc};
@@ -16,6 +17,7 @@ struct AppState {
     current_month:   String,
     sections_open:   [bool; 4],
     lines_expanded:  [Vec<bool>; 4],
+    register_asc:    bool,
 }
 
 impl AppState {
@@ -28,6 +30,7 @@ impl AppState {
             current_month,
             sections_open:  [false; 4],
             lines_expanded: [vec![], vec![], vec![], vec![]],
+            register_asc:   false,
         }
     }
 
@@ -76,13 +79,18 @@ fn make_line_items(lines: &[Line]) -> ModelRc<LineItem> {
     let items: Vec<LineItem> = lines.iter().enumerate().map(|(i, l)| {
         let etat  = l.payments.iter().map(|p| p.amount).sum::<f64>();
         let solde = (l.banque + l.cash) - etat;
+        let has_rec = l.recurring.is_some();
+        let rec_freq = l.recurring.as_ref().map(|r| r.freq as i32).unwrap_or(0);
         LineItem {
             name:   l.name.clone().into(),
             banque: l.banque as f32,
             cash:   l.cash as f32,
-            etat:   etat as f32,
-            solde:  solde as f32,
+            etat:   fmt(etat).into(),
+            solde:  fmt(solde).into(),
+            solde_val: solde as f32,
             idx:    i as i32,
+            has_recurring: has_rec,
+            recurring_freq: rec_freq,
         }
     }).collect();
     ModelRc::new(VecModel::from(items))
@@ -166,6 +174,15 @@ fn hex_color(hex: &str) -> slint::Color {
 
 fn status_str(s: SyncStatus) -> &'static str {
     match s { SyncStatus::Dav => "dav", SyncStatus::DavError => "dav_err", SyncStatus::Local => "local" }
+}
+
+fn show_toast(window: &AppWindow, msg: &str) {
+    window.set_toast_message(msg.into());
+    window.set_toast_show(true);
+    let w2 = window.as_weak();
+    slint::Timer::single_shot(std::time::Duration::from_millis(2500), move || {
+        if let Some(w) = w2.upgrade() { w.set_toast_show(false); }
+    });
 }
 
 fn month_key_to_tab(key: &str) -> Tab {
@@ -253,6 +270,271 @@ fn push_month(window: &AppWindow, state: &AppState) {
     window.set_sec1_expanded(make_bool_model(state.lines_expanded.get(1).unwrap_or(&empty)));
     window.set_sec2_expanded(make_bool_model(state.lines_expanded.get(2).unwrap_or(&empty)));
     window.set_sec3_expanded(make_bool_model(state.lines_expanded.get(3).unwrap_or(&empty)));
+
+    // Register
+    push_register(window, state);
+}
+
+// --- Push register (all payments sorted by date)
+fn push_register(window: &AppWindow, state: &AppState) {
+    let Some(m) = state.month() else { return };
+    let sec_names = ["Income", "Withdrawal", "Fixed", "Variable"];
+    let sections: [&Vec<Line>; 4] = [&m.revenus, &m.retraits, &m.fixes, &m.variables];
+
+    let mut entries: Vec<(String, String, String, f64)> = vec![];
+    for (si, lines) in sections.iter().enumerate() {
+        for line in lines.iter() {
+            for p in &line.payments {
+                entries.push((
+                    p.date.clone(),
+                    line.name.clone(),
+                    sec_names[si].to_string(),
+                    p.amount,
+                ));
+            }
+        }
+    }
+
+    if state.register_asc {
+        entries.sort_by(|a, b| a.0.cmp(&b.0));
+    } else {
+        entries.sort_by(|a, b| b.0.cmp(&a.0));
+    }
+
+    let items: Vec<RegisterEntry> = entries.iter().map(|(d, l, s, a)| {
+        RegisterEntry {
+            date:    d.clone().into(),
+            label:   l.clone().into(),
+            section: s.clone().into(),
+            amount:  *a as f32,
+        }
+    }).collect();
+
+    window.set_register_entries(ModelRc::new(VecModel::from(items)));
+    window.set_register_asc(state.register_asc);
+}
+
+// --- Push annual charts data to window (port of charts_view.py)
+fn push_charts(window: &AppWindow, state: &AppState) {
+    let data = &state.storage.data;
+    let currency = &state.storage.cfg.currency;
+
+    let mut tot_rev = 0.0_f64;
+    let mut tot_paye = 0.0_f64;
+    let mut tot_a_payer = 0.0_f64;
+    let mut tot_ret = 0.0_f64;
+    let mut tot_prev = 0.0_f64;
+    let mut tot_solde = 0.0_f64;
+
+    let month_labels: Vec<&str> = MONTHS.iter().copied().collect();
+
+    struct RowData { rev: f64, dep: f64, prev: f64 }
+    let mut rows: Vec<RowData> = Vec::with_capacity(12);
+
+    for &mk in &MONTHS {
+        let m = match data.months.get(mk) {
+            Some(m) => m,
+            None => { rows.push(RowData { rev: 0.0, dep: 0.0, prev: 0.0 }); continue; }
+        };
+
+        let rev_banque: f64 = m.revenus.iter().map(|l| l.banque).sum();
+        let rev_cash: f64   = m.revenus.iter().map(|l| l.cash).sum();
+        let rev_total       = rev_banque + rev_cash;
+
+        let ret_a_retirer: f64 = m.retraits.iter().map(|l| l.banque).sum();
+        let ret_retire: f64    = m.retraits.iter().map(|l| l.etat()).sum();
+
+        let all_dep: Vec<&Line> = m.fixes.iter().chain(m.variables.iter()).collect();
+        let dep_banque: f64 = all_dep.iter().map(|l| l.banque).sum();
+        let dep_cash: f64   = all_dep.iter().map(|l| l.cash).sum();
+
+        let rev_recu_b: f64 = m.revenus.iter().filter(|l| l.banque > 0.01).map(|l| l.etat()).sum();
+        let rev_recu_c: f64 = m.revenus.iter().filter(|l| l.cash > 0.01).map(|l| l.etat()).sum();
+        let paye_banque: f64 = all_dep.iter().filter(|l| l.banque > 0.01).map(|l| l.etat()).sum::<f64>() + ret_retire;
+        let paye_cash: f64   = all_dep.iter().filter(|l| l.cash > 0.01).map(|l| l.etat()).sum();
+        let paye_total       = paye_banque + paye_cash;
+
+        let a_payer_b = dep_banque - all_dep.iter().filter(|l| l.banque > 0.01).map(|l| l.etat()).sum::<f64>();
+        let a_payer_c = dep_cash   - all_dep.iter().filter(|l| l.cash > 0.01).map(|l| l.etat()).sum::<f64>();
+
+        let prev_banque = rev_banque - dep_banque - ret_a_retirer;
+        let prev_cash   = rev_cash + ret_a_retirer - dep_cash;
+        let prev_total  = prev_banque + prev_cash;
+
+        let solde_banque = rev_recu_b - paye_banque;
+        let solde_cash   = ret_retire + rev_recu_c - paye_cash;
+        let solde_total  = solde_banque + solde_cash;
+
+        tot_rev     += rev_total;
+        tot_ret     += ret_a_retirer;
+        tot_paye    += paye_total;
+        tot_a_payer += a_payer_b + a_payer_c;
+        tot_prev    += prev_total;
+        tot_solde   += solde_total;
+
+        rows.push(RowData { rev: rev_total, dep: dep_banque + dep_cash, prev: prev_total });
+    }
+
+    // 6 summary cards
+    window.set_charts_total_income(format!("{} {}", fmt_sign(tot_rev), currency).into());
+    window.set_charts_total_paid(format!("{} {}", fmt(tot_paye), currency).into());
+    window.set_charts_total_to_pay(format!("{} {}", fmt(tot_a_payer), currency).into());
+    window.set_charts_total_withdrawals(format!("{} {}", fmt(tot_ret), currency).into());
+    window.set_charts_total_forecast(format!("{} {}", fmt_sign(tot_prev), currency).into());
+    window.set_charts_total_balance(format!("{} {}", fmt_sign(tot_solde), currency).into());
+
+    window.set_charts_income_color(color_for(tot_rev));
+    window.set_charts_paid_color(hex_color("#85CDCA")); // teal
+    window.set_charts_to_pay_color(color_for(-tot_a_payer));
+    window.set_charts_withdrawals_color(hex_color("#F2D388")); // amber
+    window.set_charts_forecast_color(color_for(tot_prev));
+    window.set_charts_balance_color(color_for(tot_solde));
+
+    // Monthly rows
+    let mut r_months: Vec<SharedString> = Vec::with_capacity(12);
+    let mut r_incomes: Vec<SharedString> = Vec::with_capacity(12);
+    let mut r_expenses: Vec<SharedString> = Vec::with_capacity(12);
+    let mut r_forecasts: Vec<SharedString> = Vec::with_capacity(12);
+    let mut r_fcols: Vec<slint::Color> = Vec::with_capacity(12);
+
+    let mut cumul = 0.0_f64;
+    for (i, rd) in rows.iter().enumerate() {
+        cumul += rd.prev;
+        r_months.push(month_labels[i].into());
+        r_incomes.push(fmt(rd.rev).into());
+        r_expenses.push(fmt(rd.dep).into());
+        r_forecasts.push(fmt_sign(rd.prev).into());
+        r_fcols.push(color_for(rd.prev));
+    }
+
+    window.set_charts_row_months(ModelRc::new(VecModel::from(r_months)));
+    window.set_charts_row_incomes(ModelRc::new(VecModel::from(r_incomes)));
+    window.set_charts_row_expenses(ModelRc::new(VecModel::from(r_expenses)));
+    window.set_charts_row_forecasts(ModelRc::new(VecModel::from(r_forecasts)));
+    window.set_charts_row_forecast_colors(ModelRc::new(VecModel::from(r_fcols)));
+
+    // Annual cumulative
+    window.set_charts_annual_cumul(format!("{}", fmt_sign(cumul)).into());
+    window.set_charts_annual_cumul_color(color_for(cumul));
+}
+
+// --- Push debts data to window (port of build_dettes_view)
+fn push_debts(window: &AppWindow, state: &AppState) {
+    let dettes = &state.storage.data.dettes;
+
+    let total_due: f64 = dettes.iter().map(|d| d.solde).sum();
+    let total_neg: f64 = dettes.iter().map(|d| d.solde_ok).sum();
+    let settled: i32   = dettes.iter().filter(|d| d.solde_ok >= d.solde && d.solde > 0.0).count() as i32;
+
+    window.set_debts_total_due(fmt(total_due).into());
+    window.set_debts_total_neg(fmt(total_neg).into());
+    window.set_debts_settled(settled);
+
+    let items: Vec<DebtItem> = dettes.iter().enumerate().map(|(i, d)| {
+        DebtItem {
+            rep:        d.rep.clone().into(),
+            creditor:   d.creancier.clone().into(),
+            pursuit:    d.poursuite.clone().into(),
+            balance:    d.solde as f32,
+            balance_ok: d.solde_ok as f32,
+            status:     d.etat.clone().into(),
+            date:       d.date.clone().into(),
+            idx:        i as i32,
+        }
+    }).collect();
+    window.set_debts_list(ModelRc::new(VecModel::from(items)));
+}
+
+// --- Push savings data to window (port of build_epargne_view — sondages)
+fn push_savings(window: &AppWindow, state: &AppState) {
+    let sondages = &state.storage.data.epargne.sondages;
+    let items: Vec<SavingsEntry> = sondages.iter().enumerate().map(|(i, s)| {
+        let pct = if s.goal > 0.01 { ((s.total / s.goal) * 100.0) as i32 } else { 0 };
+        SavingsEntry {
+            label:   s.name.clone().into(),
+            target:  s.goal as f32,
+            current: s.total as f32,
+            percent: pct,
+            idx:     i as i32,
+        }
+    }).collect();
+    window.set_savings_list(ModelRc::new(VecModel::from(items)));
+}
+
+// --- Push expenses (frais) data to window
+fn make_expense_section(label: &str, lines: &[FraisLine]) -> ExpenseSection {
+    let mut sec_total = 0.0_f64;
+    let el: Vec<ExpenseLine> = lines.iter().map(|fl| {
+        let t: f64 = fl.monthly.iter().sum();
+        sec_total += t;
+        ExpenseLine {
+            name:  fl.name.clone().into(),
+            m0:  fl.monthly[0]  as f32, m1:  fl.monthly[1]  as f32,
+            m2:  fl.monthly[2]  as f32, m3:  fl.monthly[3]  as f32,
+            m4:  fl.monthly[4]  as f32, m5:  fl.monthly[5]  as f32,
+            m6:  fl.monthly[6]  as f32, m7:  fl.monthly[7]  as f32,
+            m8:  fl.monthly[8]  as f32, m9:  fl.monthly[9]  as f32,
+            m10: fl.monthly[10] as f32, m11: fl.monthly[11] as f32,
+            total: t as f32,
+        }
+    }).collect();
+    ExpenseSection {
+        label: label.into(),
+        lines: ModelRc::new(VecModel::from(el)),
+        total: sec_total as f32,
+    }
+}
+
+fn push_expenses(window: &AppWindow, state: &AppState) {
+    let frais = &state.storage.data.frais;
+    window.set_expenses_fixed(make_expense_section("Fixed", &frais.fixes));
+    window.set_expenses_occasional(make_expense_section("Occasional", &frais.ponctuels));
+    window.set_expenses_withdrawals(make_expense_section("Withdrawals", &frais.retraits));
+}
+
+// --- Apply theme colors to Palette global
+fn apply_theme(window: &AppWindow, is_dark: bool) {
+    let p = if is_dark { &DARK } else { &LIGHT };
+    let pal = Palette::get(window);
+    pal.set_bg(hex_color(p.bg));
+    pal.set_bg2(hex_color(p.bg2));
+    pal.set_card(hex_color(p.card));
+    pal.set_card_border(hex_color(p.card_border));
+    pal.set_text(hex_color(p.text));
+    pal.set_text2(hex_color(p.text2));
+    pal.set_text3(hex_color(p.text3));
+    pal.set_red(hex_color(p.red));
+    pal.set_teal(hex_color(p.teal));
+    pal.set_gold(hex_color(p.gold));
+    pal.set_green(hex_color(p.green));
+    pal.set_danger(hex_color(p.danger));
+    pal.set_amber(hex_color(p.amber));
+    pal.set_brown(hex_color(p.brown));
+    pal.set_blue(hex_color(p.blue));
+    pal.set_purple(hex_color(p.purple));
+}
+
+// --- Push settings data to window
+fn push_settings(window: &AppWindow, state: &AppState) {
+    let cfg = &state.storage.cfg;
+    let active_slug = &cfg.active;
+    let items: Vec<ProfileItem> = cfg.profiles.iter().enumerate().map(|(i, p)| {
+        ProfileItem {
+            name:   p.name.clone().into(),
+            slug:   p.slug.clone().into(),
+            active: p.slug == *active_slug,
+            idx:    i as i32,
+        }
+    }).collect();
+    window.set_settings_profiles(ModelRc::new(VecModel::from(items)));
+
+    let prof = state.storage.active_profile();
+    window.set_settings_dav_url(prof.dav_url.clone().into());
+    window.set_settings_dav_user(prof.dav_user.clone().into());
+    window.set_settings_dav_pass(prof.dav_pass.clone().into());
+    window.set_settings_currency_edit(cfg.currency.clone().into());
+    window.set_profile_name(prof.name.clone().into());
+    window.set_currency(cfg.currency.clone().into());
 }
 
 #[cfg(target_os = "android")]
@@ -277,6 +559,12 @@ fn run() {
         window.set_currency(st.storage.cfg.currency.clone().into());
         window.set_sync_status(status_str(st.storage.status()).into());
         push_month(&window, &st);
+        push_charts(&window, &st);
+        push_debts(&window, &st);
+        push_savings(&window, &st);
+        push_expenses(&window, &st);
+        push_settings(&window, &st);
+        apply_theme(&window, true);
     }
 
     // Tab change
@@ -293,6 +581,17 @@ fn run() {
                 st.lines_expanded = [vec![], vec![], vec![], vec![]];
                 st.ensure_expanded();
                 push_month(&w, &st);
+            }
+            {
+                let st = state_ref.lock().unwrap();
+                match tab {
+                    Tab::Charts   => push_charts(&w, &st),
+                    Tab::Debts    => push_debts(&w, &st),
+                    Tab::Savings  => push_savings(&w, &st),
+                    Tab::Expenses => push_expenses(&w, &st),
+                    Tab::Config   => push_settings(&w, &st),
+                    _ => {}
+                }
             }
         });
     }
@@ -430,6 +729,102 @@ fn run() {
         });
     }
 
+    // Set recurring
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_set_recurring(move |si, li, freq, include_past| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let mk = st.current_month.clone();
+            let src_mi = MONTHS.iter().position(|&m| m == mk.as_str()).unwrap_or(0);
+
+            if freq <= 0 {
+                // Disable: remove recurring flag and delete propagated entries
+                let line = &st.sec_lines(si as usize)[li as usize];
+                let name = line.name.clone();
+                let old_freq = line.recurring.as_ref().map(|r| r.freq as usize).unwrap_or(3);
+                let sec_key = match si as usize { 0 => "revenus", 1 => "retraits", 2 => "fixes", _ => "variables" };
+
+                // Remove recurring flag on source
+                let line = &mut st.sec_lines_mut(si as usize)[li as usize];
+                line.recurring = None;
+
+                // Remove propagated entries from other months
+                for step in 1..13 {
+                    let target_mi = (src_mi + step * old_freq) % 12;
+                    if target_mi == src_mi { break; }
+                    if !include_past && target_mi < src_mi { continue; }
+
+                    let target_key = MONTHS[target_mi].to_string();
+                    if let Some(target_month) = st.storage.data.months.get_mut(&target_key) {
+                        let sec = target_month.section_mut(sec_key);
+                        sec.retain(|l| !(l.name == name && l.recurring.is_some()));
+                    }
+                }
+            } else {
+                // Get source line amounts
+                let line = &st.sec_lines(si as usize)[li as usize];
+                let banque = line.banque;
+                let cash = line.cash;
+                let name = line.name.clone();
+                let sec_key = match si as usize { 0 => "revenus", 1 => "retraits", 2 => "fixes", _ => "variables" };
+
+                // Set recurring on source
+                let line = &mut st.sec_lines_mut(si as usize)[li as usize];
+                line.recurring = Some(Recurring {
+                    freq: freq as u32,
+                    start: mk.clone(),
+                });
+
+                // Propagate to target months
+                let f = freq as usize;
+                for step in 1..13 {
+                    let target_mi = (src_mi + step * f) % 12;
+                    if target_mi == src_mi { break; }
+
+                    // Skip past months unless checkbox checked
+                    if !include_past && target_mi < src_mi { continue; }
+
+                    let target_key = MONTHS[target_mi].to_string();
+                    if let Some(target_month) = st.storage.data.months.get_mut(&target_key) {
+                        let sec = target_month.section_mut(sec_key);
+                        if let Some(existing) = sec.iter_mut().find(|l| l.name == name) {
+                            // Overwrite amounts
+                            existing.banque = banque;
+                            existing.cash = cash;
+                            existing.recurring = Some(Recurring { freq: freq as u32, start: mk.clone() });
+                        } else {
+                            // Create new
+                            sec.push(Line {
+                                name: name.clone(),
+                                banque, cash,
+                                payments: vec![],
+                                recurring: Some(Recurring { freq: freq as u32, start: mk.clone() }),
+                            });
+                            sec.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+                        }
+                    }
+                }
+            }
+
+            st.storage.save();
+            push_month(&w, &st);
+        });
+    }
+
+    // Toggle register sort
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_toggle_register_sort(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            st.register_asc = !st.register_asc;
+            push_register(&w, &st);
+        });
+    }
+
     // Save
     {
         let state_ref = state.clone();
@@ -439,12 +834,7 @@ fn run() {
             let mut st = state_ref.lock().unwrap();
             let status = st.storage.save();
             w.set_sync_status(status_str(status).into());
-            w.set_toast_message("Saved".into());
-            w.set_toast_show(true);
-            let w2 = w.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(2500), move || {
-                if let Some(w) = w2.upgrade() { w.set_toast_show(false); }
-            });
+            show_toast(&w, "Saved");
         });
     }
 
@@ -453,7 +843,9 @@ fn run() {
         let ww = window.as_weak();
         window.on_toggle_theme(move || {
             let w = ww.unwrap();
-            w.set_is_dark(!w.get_is_dark());
+            let new_dark = !w.get_is_dark();
+            w.set_is_dark(new_dark);
+            apply_theme(&w, new_dark);
         });
     }
 
@@ -461,6 +853,329 @@ fn run() {
     {
         let ww = window.as_weak();
         window.on_go_config(move || { ww.unwrap().set_current_tab(Tab::Config); });
+    }
+
+    // Add debt
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_add_debt(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            st.storage.data.dettes.push(Dette::default());
+            st.storage.save();
+            push_debts(&w, &st);
+        });
+    }
+
+    // Delete debt
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_delete_debt(move |idx| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.dettes.len() {
+                st.storage.data.dettes.remove(i);
+                st.storage.save();
+                push_debts(&w, &st);
+            }
+        });
+    }
+
+    // Update debt field
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_update_debt_field(move |idx, field, val| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.dettes.len() {
+                let d = &mut st.storage.data.dettes[i];
+                let f: String = field.into();
+                let v: String = val.into();
+                match f.as_str() {
+                    "creditor"   => d.creancier  = v,
+                    "rep"        => d.rep         = v,
+                    "pursuit"    => d.poursuite   = v,
+                    "balance"    => { if let Ok(n) = v.parse::<f64>() { d.solde = n; } }
+                    "balance-ok" => { if let Ok(n) = v.parse::<f64>() { d.solde_ok = n; } }
+                    "status"     => d.etat        = v,
+                    "date"       => d.date         = v,
+                    _ => {}
+                }
+                st.storage.save();
+                push_debts(&w, &st);
+            }
+        });
+    }
+
+    // Add saving
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_add_saving(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            st.storage.data.epargne.sondages.push(EpargneSondage {
+                name: "New".into(), total: 0.0, goal: 0.0,
+            });
+            st.storage.save();
+            push_savings(&w, &st);
+        });
+    }
+
+    // Delete saving
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_delete_saving(move |idx| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.epargne.sondages.len() {
+                st.storage.data.epargne.sondages.remove(i);
+                st.storage.save();
+                push_savings(&w, &st);
+            }
+        });
+    }
+
+    // Update saving field
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_update_saving_field(move |idx, field, val| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.data.epargne.sondages.len() {
+                let s = &mut st.storage.data.epargne.sondages[i];
+                let f: String = field.into();
+                let v: String = val.into();
+                match f.as_str() {
+                    "name"  => s.name = v,
+                    "total" => { if let Ok(n) = v.parse::<f64>() { s.total = n; } }
+                    "goal"  => { if let Ok(n) = v.parse::<f64>() { s.goal = n; } }
+                    _ => {}
+                }
+                st.storage.save();
+                push_savings(&w, &st);
+            }
+        });
+    }
+
+    // ── Settings callbacks ─────────────────────────────────────────────
+
+    // Save WebDAV config
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_save_dav(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let url: String  = w.get_settings_dav_url().into();
+            let user: String = w.get_settings_dav_user().into();
+            let pass: String = w.get_settings_dav_pass().into();
+            let slug = st.storage.cfg.active.clone();
+            st.storage.save_profile_dav(&slug, &url, &user, &pass);
+            w.set_settings_dav_status("Config saved ✓".into());
+            w.set_sync_status(status_str(st.storage.status()).into());
+            show_toast(&w, "Config saved");
+        });
+    }
+
+    // Test WebDAV
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_test_dav(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            // Save first
+            let url: String  = w.get_settings_dav_url().into();
+            let user: String = w.get_settings_dav_user().into();
+            let pass: String = w.get_settings_dav_pass().into();
+            let slug = st.storage.cfg.active.clone();
+            st.storage.save_profile_dav(&slug, &url, &user, &pass);
+            let (ok, msg) = st.storage.test_dav();
+            if ok { st.storage.dav_ok = true; }
+            w.set_settings_dav_status(msg.clone().into());
+            w.set_sync_status(status_str(st.storage.status()).into());
+            show_toast(&w, &msg);
+        });
+    }
+
+    // Clear WebDAV
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_clear_dav(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let slug = st.storage.cfg.active.clone();
+            st.storage.save_profile_dav(&slug, "", "", "");
+            st.storage.dav_ok = false;
+            w.set_settings_dav_url("".into());
+            w.set_settings_dav_user("".into());
+            w.set_settings_dav_pass("".into());
+            w.set_settings_dav_status("Config cleared".into());
+            w.set_sync_status(status_str(st.storage.status()).into());
+            show_toast(&w, "Config cleared");
+        });
+    }
+
+    // Save currency
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_save_currency(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let cur: String = w.get_settings_currency_edit().into();
+            st.storage.set_currency(&cur);
+            w.set_currency(st.storage.cfg.currency.clone().into());
+            show_toast(&w, "Currency saved");
+        });
+    }
+
+    // Export JSON
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_do_export(move || {
+            let w = ww.unwrap();
+            let st = state_ref.lock().unwrap();
+            let json = st.storage.export_json();
+            let fname = format!("oxycash-{}.json", model::today());
+            let dir = dirs::home_dir().unwrap_or_default();
+            let path = dir.join(&fname);
+            match std::fs::write(&path, &json) {
+                Ok(_) => show_toast(&w, &format!("Exported: {}", fname)),
+                Err(e) => show_toast(&w, &format!("Error: {}", e)),
+            }
+        });
+    }
+
+    // Import JSON
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_do_import(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            // Try to find latest oxycash*.json in home dir
+            let dir = dirs::home_dir().unwrap_or_default();
+            let mut found = None;
+            if let Ok(entries) = std::fs::read_dir(&dir) {
+                for entry in entries.flatten() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    if name.starts_with("oxycash") && name.ends_with(".json") {
+                        found = Some(entry.path());
+                    }
+                }
+            }
+            match found {
+                Some(path) => {
+                    match std::fs::read_to_string(&path) {
+                        Ok(raw) => {
+                            if st.storage.import_json(&raw) {
+                                push_month(&w, &st);
+                                push_charts(&w, &st);
+                                push_debts(&w, &st);
+                                push_savings(&w, &st);
+                                push_expenses(&w, &st);
+                                show_toast(&w, "Import OK ✓");
+                            } else {
+                                show_toast(&w, "Invalid JSON format");
+                            }
+                        }
+                        Err(e) => show_toast(&w, &format!("Error: {}", e)),
+                    }
+                }
+                None => show_toast(&w, "No oxycash*.json found in home"),
+            }
+        });
+    }
+
+    // Reset
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_do_reset(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            st.storage.reset();
+            push_month(&w, &st);
+            push_charts(&w, &st);
+            push_debts(&w, &st);
+            push_savings(&w, &st);
+            push_expenses(&w, &st);
+            show_toast(&w, "Reset ✓");
+        });
+    }
+
+    // Switch profile
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_switch_profile(move |idx| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.cfg.profiles.len() {
+                let slug = st.storage.cfg.profiles[i].slug.clone();
+                st.storage.switch_profile(&slug);
+                push_month(&w, &st);
+                push_charts(&w, &st);
+                push_debts(&w, &st);
+                push_savings(&w, &st);
+                push_expenses(&w, &st);
+                push_settings(&w, &st);
+                w.set_sync_status(status_str(st.storage.status()).into());
+            }
+        });
+    }
+
+    // Delete profile
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_delete_profile(move |idx| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i < st.storage.cfg.profiles.len() && st.storage.cfg.profiles.len() > 1 {
+                let slug = st.storage.cfg.profiles[i].slug.clone();
+                st.storage.delete_profile(&slug);
+                st.storage.load();
+                push_month(&w, &st);
+                push_settings(&w, &st);
+                w.set_sync_status(status_str(st.storage.status()).into());
+                show_toast(&w, "Profile deleted");
+            }
+        });
+    }
+
+    // Add profile
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_add_profile(move |name| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let n: String = name.into();
+            let n = n.trim();
+            if n.is_empty() { return; }
+            let slug = st.storage.add_profile(n);
+            st.storage.switch_profile(&slug);
+            push_month(&w, &st);
+            push_settings(&w, &st);
+            w.set_sync_status(status_str(st.storage.status()).into());
+            show_toast(&w, &format!("Profile '{}' created", n));
+        });
     }
 
     window.run().unwrap();

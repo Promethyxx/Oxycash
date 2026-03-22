@@ -1,12 +1,13 @@
 // oxycash-rs - ui/main.slint
 
 import { Palette }      from "palette.slint";
-import { MonthView, LineItem, PaymentItem } from "month_view.slint";
-import { SettingsView } from "settings.slint";
+export { Palette }
+import { MonthView, LineItem, PaymentItem, RegisterEntry } from "month_view.slint";
+import { SettingsView, ProfileItem } from "settings.slint";
 import { ChartsView }   from "charts_view.slint";
-import { DebtsView }    from "debts_view.slint";
-import { SavingsView }  from "savings_view.slint";
-import { ExpensesView } from "expenses_view.slint";
+import { DebtsView, DebtItem }    from "debts_view.slint";
+import { SavingsView, SavingsEntry }  from "savings_view.slint";
+import { ExpensesView, ExpenseSection, ExpenseLine } from "expenses_view.slint";
 
 export enum Tab {
     JAN, FEB, MAR, APR, MAI, JUN,
@@ -29,15 +30,18 @@ component TabButton inherits Rectangle {
 
     TouchArea { clicked => { root.clicked(); } }
 
-    Text {
-        text: label;
-        font-size: 11px;
-        font-weight: 600;
-        color: active ? #1a1a1a : (special ? Palette.teal : Palette.text3);
-        vertical-alignment: center;
-        horizontal-alignment: center;
+    HorizontalLayout {
         padding-left: 12px;
         padding-right: 12px;
+
+        Text {
+            text: label;
+            font-size: 11px;
+            font-weight: 600;
+            color: active ? #1a1a1a : (special ? Palette.teal : Palette.text3);
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
     }
 }
 
@@ -113,6 +117,53 @@ export component AppWindow inherits Window {
     in property <[bool]>           sec0-expanded; in property <[bool]>   sec1-expanded; in property <[bool]>   sec2-expanded; in property <[bool]>   sec3-expanded;
     in property <[[PaymentItem]]>  sec0-payments; in property <[[PaymentItem]]> sec1-payments; in property <[[PaymentItem]]> sec2-payments; in property <[[PaymentItem]]> sec3-payments;
 
+    // Register
+    in property <[RegisterEntry]> register-entries: [];
+    in property <bool>            register-asc:     false;
+
+    // Charts (annual) properties
+    in property <string> charts-total-income:      "+0";
+    in property <string> charts-total-paid:        "+0";
+    in property <string> charts-total-to-pay:      "+0";
+    in property <string> charts-total-withdrawals: "+0";
+    in property <string> charts-total-forecast:    "+0";
+    in property <string> charts-total-balance:     "+0";
+    in property <color>  charts-income-color:      #7BC47F;
+    in property <color>  charts-paid-color:        #85CDCA;
+    in property <color>  charts-to-pay-color:      #E05555;
+    in property <color>  charts-withdrawals-color: #F2D388;
+    in property <color>  charts-forecast-color:    #7BC47F;
+    in property <color>  charts-balance-color:     #7BC47F;
+    in property <[string]> charts-row-months:    [];
+    in property <[string]> charts-row-incomes:   [];
+    in property <[string]> charts-row-expenses:  [];
+    in property <[string]> charts-row-forecasts: [];
+    in property <[color]>  charts-row-forecast-colors: [];
+    in property <string> charts-annual-cumul:       "+0";
+    in property <color>  charts-annual-cumul-color: #7BC47F;
+
+    // Debts properties
+    in property <string>     debts-total-due:  "0";
+    in property <string>     debts-total-neg:  "0";
+    in property <int>        debts-settled:    0;
+    in property <[DebtItem]> debts-list:       [];
+
+    // Savings properties
+    in property <[SavingsEntry]> savings-list: [];
+
+    // Expenses properties
+    in property <ExpenseSection> expenses-fixed:       { label: "Fixed",       lines: [], total: 0.0 };
+    in property <ExpenseSection> expenses-occasional:  { label: "Occasional",  lines: [], total: 0.0 };
+    in property <ExpenseSection> expenses-withdrawals: { label: "Withdrawals", lines: [], total: 0.0 };
+
+    // Settings properties
+    in property <[ProfileItem]> settings-profiles:  [];
+    in property <string>        settings-dav-status: "";
+    in-out property <string>    settings-dav-url:   "";
+    in-out property <string>    settings-dav-user:  "";
+    in-out property <string>    settings-dav-pass:  "";
+    in-out property <string>    settings-currency-edit: "CHF";
+
     callback tab-changed(Tab);
     callback save-requested();
     callback toggle-theme();
@@ -126,6 +177,24 @@ export component AppWindow inherits Window {
     callback add-line(int);
     callback delete-pay(int, int, int);
     callback add-pay(int, int, string, string);
+    callback set-recurring(int, int, int, bool);
+    callback toggle-register-sort();
+    callback add-debt();
+    callback delete-debt(int);
+    callback update-debt-field(int, string, string);
+    callback add-saving();
+    callback delete-saving(int);
+    callback update-saving-field(int, string, string);
+    callback save-dav();
+    callback test-dav();
+    callback clear-dav();
+    callback save-currency();
+    callback do-export();
+    callback do-import();
+    callback do-reset();
+    callback switch-profile(int);
+    callback delete-profile(int);
+    callback add-profile(string);
 
     // Toast overlay — outside the main layout, positioned absolutely
     Toast {
@@ -263,6 +332,8 @@ export component AppWindow inherits Window {
                 sec0-lines:      sec0-lines;   sec1-lines:  sec1-lines;  sec2-lines:  sec2-lines;  sec3-lines:  sec3-lines;
                 sec0-expanded:   sec0-expanded;sec1-expanded:sec1-expanded;sec2-expanded:sec2-expanded;sec3-expanded:sec3-expanded;
                 sec0-payments:   sec0-payments;sec1-payments:sec1-payments;sec2-payments:sec2-payments;sec3-payments:sec3-payments;
+                register-entries: register-entries;
+                register-asc:     register-asc;
                 save-requested  => { root.save-requested(); }
                 toggle-section(i)      => { root.toggle-section(i); }
                 toggle-line(s, l)      => { root.toggle-line(s, l); }
@@ -273,20 +344,79 @@ export component AppWindow inherits Window {
                 add-line(i)            => { root.add-line(i); }
                 delete-pay(s, l, i)    => { root.delete-pay(s, l, i); }
                 add-pay(s, l, d, a)    => { root.add-pay(s, l, d, a); }
+                set-recurring(s, l, f, p) => { root.set-recurring(s, l, f, p); }
+                toggle-register-sort   => { root.toggle-register-sort(); }
             }
-            if current-tab == Tab.Debts     : DebtsView    { currency: currency; }
-            if current-tab == Tab.Savings   : SavingsView  { currency: currency; }
-            if current-tab == Tab.Expenses  : ExpensesView { currency: currency; }
+            if current-tab == Tab.Debts     : DebtsView {
+                currency:   currency;
+                total-due:  debts-total-due;
+                total-neg:  debts-total-neg;
+                settled:    debts-settled;
+                debts:      debts-list;
+                add-debt           => { root.add-debt(); }
+                delete-debt(idx)   => { root.delete-debt(idx); }
+                update-debt-field(idx, field, val) => { root.update-debt-field(idx, field, val); }
+            }
+            if current-tab == Tab.Savings   : SavingsView {
+                currency: currency;
+                entries:  savings-list;
+                add-entry           => { root.add-saving(); }
+                delete-entry(idx)   => { root.delete-saving(idx); }
+                update-entry-field(idx, field, val) => { root.update-saving-field(idx, field, val); }
+            }
+            if current-tab == Tab.Expenses  : ExpensesView {
+                currency:    currency;
+                fixed:       expenses-fixed;
+                occasional:  expenses-occasional;
+                withdrawals: expenses-withdrawals;
+            }
             if current-tab == Tab.Viability : Rectangle {
                 Text { text: "Viability - coming soon"; color: Palette.text2;
                        font-size: 14px; horizontal-alignment: center; vertical-alignment: center; }
             }
-            if current-tab == Tab.Charts    : ChartsView   { currency: currency; }
+            if current-tab == Tab.Charts    : ChartsView {
+                currency:              currency;
+                total-income:          charts-total-income;
+                total-paid:            charts-total-paid;
+                total-to-pay:          charts-total-to-pay;
+                total-withdrawals:     charts-total-withdrawals;
+                total-forecast:        charts-total-forecast;
+                total-balance:         charts-total-balance;
+                income-color:          charts-income-color;
+                paid-color:            charts-paid-color;
+                to-pay-color:          charts-to-pay-color;
+                withdrawals-color:     charts-withdrawals-color;
+                forecast-color:        charts-forecast-color;
+                balance-color:         charts-balance-color;
+                row-months:            charts-row-months;
+                row-incomes:           charts-row-incomes;
+                row-expenses:          charts-row-expenses;
+                row-forecasts:         charts-row-forecasts;
+                row-forecast-colors:   charts-row-forecast-colors;
+                annual-cumul:          charts-annual-cumul;
+                annual-cumul-color:    charts-annual-cumul-color;
+            }
             if current-tab == Tab.Config    : SettingsView {
-                profile-name: profile-name;
-                currency:     currency;
-                is-dark:      is-dark;
-                toggle-theme => { root.toggle-theme(); }
+                profile-name:  profile-name;
+                currency:      currency;
+                is-dark:       is-dark;
+                profiles:      settings-profiles;
+                dav-status:    settings-dav-status;
+                dav-url   <=>  settings-dav-url;
+                dav-user  <=>  settings-dav-user;
+                dav-pass  <=>  settings-dav-pass;
+                currency-edit <=> settings-currency-edit;
+                toggle-theme       => { root.toggle-theme(); }
+                save-dav           => { root.save-dav(); }
+                test-dav           => { root.test-dav(); }
+                clear-dav          => { root.clear-dav(); }
+                save-currency      => { root.save-currency(); }
+                do-export          => { root.do-export(); }
+                do-import          => { root.do-import(); }
+                do-reset           => { root.do-reset(); }
+                switch-profile(i)  => { root.switch-profile(i); }
+                delete-profile(i)  => { root.delete-profile(i); }
+                add-profile(name)  => { root.add-profile(name); }
             }
         }
     }
