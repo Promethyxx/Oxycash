@@ -20,14 +20,14 @@ component SummaryCard inherits Rectangle {
 
         Text {
             text: label;
-            font-size: 14px;
+            font-size: 14px + Palette.font-offset;
             font-weight: 600;
             color: Palette.text3;
         }
 
         Text {
             text: value;
-            font-size: 18px;
+            font-size: 18px + Palette.font-offset;
             font-weight: 700;
             color: value-color;
         }
@@ -49,14 +49,14 @@ component MonthRow inherits Rectangle {
         padding-left: 4px;
         padding-right: 4px;
 
-        Text { text: month;    font-size: 14px; color: Palette.text3;  width: 36px; horizontal-alignment: center; }
-        Text { text: income;   font-size: 14px; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
-        Text { text: expenses; font-size: 14px; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
-        Text { text: forecast; font-size: 14px; color: forecast-color; font-weight: 700; horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: month;    font-size: 14px + Palette.font-offset; color: Palette.text3;  width: 36px; horizontal-alignment: center; }
+        Text { text: income;   font-size: 14px + Palette.font-offset; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: expenses; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: forecast; font-size: 14px + Palette.font-offset; color: forecast-color; font-weight: 700; horizontal-stretch: 1; horizontal-alignment: right; }
     }
 }
 
-export component ChartsView inherits Flickable {
+export component ChartsView inherits Rectangle {
     in property <string> currency: "CHF";
 
     // Annual totals - set from Rust
@@ -84,7 +84,10 @@ export component ChartsView inherits Flickable {
     in property <string> annual-cumul:       "+0";
     in property <color>  annual-cumul-color: #7BC47F;
 
-    viewport-height: 700px;
+    Flickable {
+        viewport-width: root.width;
+        width: root.width;
+        height: root.height;
 
     VerticalLayout {
         padding: 14px;
@@ -92,7 +95,7 @@ export component ChartsView inherits Flickable {
 
         Text {
             text: "Charts";
-            font-size: 22px;
+            font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;
         }
@@ -100,22 +103,22 @@ export component ChartsView inherits Flickable {
         // Row 1
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { label: "Income";      value: total-income;      value-color: income-color; }
-            SummaryCard { label: "Paid";        value: total-paid;        value-color: paid-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: "Income";      value: total-income;      value-color: income-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: "Paid";        value: total-paid;        value-color: paid-color; }
         }
 
         // Row 2
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { label: "To pay";      value: total-to-pay;      value-color: to-pay-color; }
-            SummaryCard { label: "Withdrawals"; value: total-withdrawals; value-color: withdrawals-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: "To pay";      value: total-to-pay;      value-color: to-pay-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: "Withdrawals"; value: total-withdrawals; value-color: withdrawals-color; }
         }
 
         // Row 3
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { label: "Forecast";    value: total-forecast;    value-color: forecast-color; }
-            SummaryCard { label: "Balance";     value: total-balance;     value-color: balance-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: "Forecast";    value: total-forecast;    value-color: forecast-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: "Balance";     value: total-balance;     value-color: balance-color; }
         }
 
         // Annual cumulative card
@@ -131,14 +134,14 @@ export component ChartsView inherits Flickable {
 
                 Text {
                     text: "Annual cumulative";
-                    font-size: 15px;
+                    font-size: 15px + Palette.font-offset;
                     font-weight: 600;
                     color: Palette.text2;
                     horizontal-stretch: 1;
                 }
                 Text {
                     text: annual-cumul + " " + currency;
-                    font-size: 22px;
+                    font-size: 22px + Palette.font-offset;
                     font-weight: 700;
                     color: annual-cumul-color;
                     horizontal-alignment: right;
@@ -165,9 +168,9 @@ export component ChartsView inherits Flickable {
                     height: 24px;
 
                     Text { text: "";         width: 36px; }
-                    Text { text: "Income";   font-size: 14px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: "Exp.";     font-size: 14px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: "Forecast"; font-size: 14px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Income";   font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Exp.";     font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Forecast"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
                 }
 
                 Rectangle { height: 1px; background: Palette.card-border; }
@@ -189,14 +192,15 @@ export component ChartsView inherits Flickable {
                     padding-right: 4px;
                     height: 28px;
 
-                    Text { text: "Total"; font-size: 14px; font-weight: 700; color: Palette.text; width: 36px; }
-                    Text { text: total-income;   font-size: 14px; font-weight: 700; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: total-paid;     font-size: 14px; font-weight: 700; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: total-forecast; font-size: 14px; font-weight: 700; color: forecast-color; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "Total"; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; width: 36px; }
+                    Text { text: total-income;   font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: total-paid;     font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: total-forecast; font-size: 14px + Palette.font-offset; font-weight: 700; color: forecast-color; horizontal-stretch: 1; horizontal-alignment: right; }
                 }
             }
         }
 
         Rectangle { height: 40px; }
+    }
     }
 }

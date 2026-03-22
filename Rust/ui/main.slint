@@ -37,7 +37,7 @@ component TabButton inherits Rectangle {
 
         Text {
             text: label;
-            font-size: 13px;
+            font-size: 13px + Palette.font-offset;
             font-weight: 600;
             color: active ? #1a1a1a : (special ? Palette.teal : Palette.text3);
             vertical-alignment: center;
@@ -59,7 +59,7 @@ component SyncBadge inherits Rectangle {
         text: status == "dav"     ? "WebDAV"
             : status == "dav_err" ? "Offline"
             : "Local";
-        font-size: 12px;
+        font-size: 12px + Palette.font-offset;
         font-weight: 600;
         color: status == "dav"     ? Palette.green
              : status == "dav_err" ? Palette.danger
@@ -81,7 +81,7 @@ component Toast inherits Rectangle {
 
     Text {
         text: message;
-        font-size: 15px;
+        font-size: 15px + Palette.font-offset;
         font-weight: 500;
         color: #1a1a1a;
         vertical-alignment: center;
@@ -258,7 +258,7 @@ export component AppWindow inherits Window {
 
                         Text {
                             text: "Oxycash";
-                            font-size: 20px;
+                            font-size: 20px + Palette.font-offset;
                             font-weight: 700;
                             color: Palette.text;
                             vertical-alignment: center;
@@ -274,7 +274,7 @@ export component AppWindow inherits Window {
                             TouchArea { clicked => { root.go-config(); } }
                             Text {
                                 text: profile-name;
-                                font-size: 12px;
+                                font-size: 12px + Palette.font-offset;
                                 font-weight: 600;
                                 color: Palette.teal;
                                 vertical-alignment: center;
@@ -291,7 +291,7 @@ export component AppWindow inherits Window {
                             width: 36px; height: 36px; border-radius: 6px;
                             border-width: 1px; border-color: Palette.card-border;
                             TouchArea { clicked => { root.font-scale-down(); } }
-                            Text { text: "A-"; font-size: 13px; font-weight: 700; color: Palette.text2;
+                            Text { text: "A-"; font-size: 13px + Palette.font-offset; font-weight: 700; color: Palette.text2;
                                 horizontal-alignment: center; vertical-alignment: center; }
                         }
 
@@ -300,7 +300,7 @@ export component AppWindow inherits Window {
                             width: 36px; height: 36px; border-radius: 6px;
                             border-width: 1px; border-color: Palette.card-border;
                             TouchArea { clicked => { root.font-scale-up(); } }
-                            Text { text: "A+"; font-size: 13px; font-weight: 700; color: Palette.text2;
+                            Text { text: "A+"; font-size: 13px + Palette.font-offset; font-weight: 700; color: Palette.text2;
                                 horizontal-alignment: center; vertical-alignment: center; }
                         }
 
@@ -309,7 +309,7 @@ export component AppWindow inherits Window {
                             width: 36px; height: 36px; border-radius: 8px;
                             border-width: 1px; border-color: Palette.gold;
                             TouchArea { clicked => { root.toggle-lang(); } }
-                            Text { text: lang-label; font-size: 12px; font-weight: 700; color: Palette.gold;
+                            Text { text: lang-label; font-size: 12px + Palette.font-offset; font-weight: 700; color: Palette.gold;
                                 horizontal-alignment: center; vertical-alignment: center; }
                         }
 
@@ -320,7 +320,7 @@ export component AppWindow inherits Window {
                             TouchArea { clicked => { root.toggle-theme(); } }
                             Text {
                                 text: is-dark ? "🌙" : "☀️";
-                                font-size: 18px;
+                                font-size: 18px + Palette.font-offset;
                                 vertical-alignment: center;
                                 horizontal-alignment: center;
                             }

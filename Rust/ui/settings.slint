@@ -24,7 +24,7 @@ component Card inherits Rectangle {
 
         Text {
             text: title;
-            font-size: 14px;
+            font-size: 14px + Palette.font-offset;
             font-weight: 600;
             color: Palette.text3;
         }
@@ -50,7 +50,7 @@ component ActionBtn inherits Rectangle {
     TouchArea { clicked => { root.clicked(); } }
     Text {
         text: label;
-        font-size: 14px;
+        font-size: 14px + Palette.font-offset;
         font-weight: 600;
         color: danger ? Palette.danger : text-color;
         horizontal-alignment: center;
@@ -72,7 +72,7 @@ component InputField inherits Rectangle {
 
         Text {
             text: label-text;
-            font-size: 14px;
+            font-size: 14px + Palette.font-offset;
             color: Palette.text2;
         }
 
@@ -89,13 +89,13 @@ component InputField inherits Rectangle {
 
                 if !is-password || show-password : TextInput {
                     text <=> root.value;
-                    font-size: 15px;
+                    font-size: 15px + Palette.font-offset;
                     color: Palette.text;
                     vertical-alignment: center;
                 }
                 if is-password && !show-password : TextInput {
                     text <=> root.value;
-                    font-size: 15px;
+                    font-size: 15px + Palette.font-offset;
                     color: Palette.text;
                     vertical-alignment: center;
                     input-type: password;
@@ -108,7 +108,7 @@ component InputField inherits Rectangle {
                 TouchArea { clicked => { show-password = !show-password; } }
                 Text {
                     text: show-password ? "🙈" : "👁";
-                    font-size: 16px;
+                    font-size: 16px + Palette.font-offset;
                     horizontal-alignment: center; vertical-alignment: center;
                 }
             }
@@ -153,7 +153,7 @@ export component SettingsView inherits Flickable {
 
         Text {
             text: "Configuration";
-            font-size: 22px;
+            font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;
         }
@@ -185,7 +185,7 @@ export component SettingsView inherits Flickable {
 
                     Text {
                         text: prof.name;
-                        font-size: 14px;
+                        font-size: 14px + Palette.font-offset;
                         color: Palette.text;
                         horizontal-stretch: 1;
                         vertical-alignment: center;
@@ -201,7 +201,7 @@ export component SettingsView inherits Flickable {
                         TouchArea { clicked => { root.switch-profile(prof.idx); } }
                         Text {
                             text: prof.active ? "✓" : "Use";
-                            font-size: 14px;
+                            font-size: 14px + Palette.font-offset;
                             color: prof.active ? Palette.teal : Palette.text2;
                             horizontal-alignment: center;
                             vertical-alignment: center;
@@ -216,7 +216,7 @@ export component SettingsView inherits Flickable {
                         TouchArea { clicked => { root.delete-profile(prof.idx); } }
                         Text {
                             text: "x";
-                            font-size: 14px;
+                            font-size: 14px + Palette.font-offset;
                             color: Palette.danger;
                             horizontal-alignment: center;
                             vertical-alignment: center;
@@ -236,7 +236,7 @@ export component SettingsView inherits Flickable {
                     border-width: 1px;
                     border-color: Palette.card-border;
                     new-name-input := TextInput {
-                        font-size: 14px;
+                        font-size: 14px + Palette.font-offset;
                         color: Palette.text;
                         vertical-alignment: center;
                     }
@@ -269,7 +269,7 @@ export component SettingsView inherits Flickable {
                     border-color: Palette.card-border;
                     TextInput {
                         text <=> root.currency-edit;
-                        font-size: 15px;
+                        font-size: 15px + Palette.font-offset;
                         color: Palette.text;
                         vertical-alignment: center;
                         horizontal-alignment: center;
@@ -302,12 +302,12 @@ export component SettingsView inherits Flickable {
 
                     Text {
                         text: is-dark ? "🌙" : "☀️";
-                        font-size: 20px;
+                        font-size: 20px + Palette.font-offset;
                         vertical-alignment: center;
                     }
                     Text {
                         text: is-dark ? "Dark — switch to light" : "Light — switch to dark";
-                        font-size: 15px;
+                        font-size: 15px + Palette.font-offset;
                         font-weight: 600;
                         color: Palette.text;
                         vertical-alignment: center;
@@ -335,7 +335,7 @@ export component SettingsView inherits Flickable {
 
             if dav-status != "" : Text {
                 text: dav-status;
-                font-size: 14px;
+                font-size: 14px + Palette.font-offset;
                 color: Palette.text2;
             }
         }
@@ -353,7 +353,7 @@ export component SettingsView inherits Flickable {
 
             Text {
                 text: "Saved to user folder";
-                font-size: 14px;
+                font-size: 14px + Palette.font-offset;
                 color: Palette.text3;
             }
         }
@@ -364,7 +364,7 @@ export component SettingsView inherits Flickable {
 
             Text {
                 text: "Import from ~/.oxycash/ folder";
-                font-size: 14px;
+                font-size: 14px + Palette.font-offset;
                 color: Palette.text3;
             }
 

@@ -618,6 +618,7 @@ fn run() {
         push_viability(&window, &st);
         push_settings(&window, &st);
         apply_theme(&window, true);
+        Palette::get(&window).set_font_offset(st.storage.cfg.font_scale as f32);
     }
 
     // Tab change
@@ -931,6 +932,7 @@ fn run() {
             let mut st = state_ref.lock().unwrap();
             st.storage.cfg.font_scale = (st.storage.cfg.font_scale - 2).max(-6);
             save_config(&st.storage.cfg);
+            Palette::get(&w).set_font_offset(st.storage.cfg.font_scale as f32);
             show_toast(&w, &format!("Font {}", st.storage.cfg.font_scale));
         });
     }
@@ -944,6 +946,7 @@ fn run() {
             let mut st = state_ref.lock().unwrap();
             st.storage.cfg.font_scale = (st.storage.cfg.font_scale + 2).min(8);
             save_config(&st.storage.cfg);
+            Palette::get(&w).set_font_offset(st.storage.cfg.font_scale as f32);
             show_toast(&w, &format!("Font +{}", st.storage.cfg.font_scale));
         });
     }
@@ -1387,7 +1390,7 @@ fn run() {
         });
     }
 
-    // Export JSON
+    // Export JSON — file save dialog
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
@@ -1396,37 +1399,37 @@ fn run() {
             let st = state_ref.lock().unwrap();
             let json = st.storage.export_json();
             let fname = format!("oxycash-{}.json", model::today());
-            let dir = dirs::home_dir().unwrap_or_default();
-            let path = dir.join(&fname);
-            match std::fs::write(&path, &json) {
-                Ok(_) => show_toast(&w, &format!("Exported: {}", fname)),
-                Err(e) => show_toast(&w, &format!("Error: {}", e)),
+            drop(st); // release lock before dialog
+            let path = rfd::FileDialog::new()
+                .set_file_name(&fname)
+                .add_filter("JSON", &["json"])
+                .save_file();
+            match path {
+                Some(p) => {
+                    match std::fs::write(&p, &json) {
+                        Ok(_) => show_toast(&w, &format!("Exported ✓")),
+                        Err(e) => show_toast(&w, &format!("Error: {}", e)),
+                    }
+                }
+                None => {} // cancelled
             }
         });
     }
 
-    // Import JSON
+    // Import JSON — file open dialog
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
         window.on_do_import(move || {
             let w = ww.unwrap();
-            let mut st = state_ref.lock().unwrap();
-            // Try to find latest oxycash*.json in home dir
-            let dir = dirs::home_dir().unwrap_or_default();
-            let mut found = None;
-            if let Ok(entries) = std::fs::read_dir(&dir) {
-                for entry in entries.flatten() {
-                    let name = entry.file_name().to_string_lossy().to_string();
-                    if name.starts_with("oxycash") && name.ends_with(".json") {
-                        found = Some(entry.path());
-                    }
-                }
-            }
-            match found {
-                Some(path) => {
-                    match std::fs::read_to_string(&path) {
+            let path = rfd::FileDialog::new()
+                .add_filter("JSON", &["json"])
+                .pick_file();
+            match path {
+                Some(p) => {
+                    match std::fs::read_to_string(&p) {
                         Ok(raw) => {
+                            let mut st = state_ref.lock().unwrap();
                             if st.storage.import_json(&raw) {
                                 push_month(&w, &st);
                                 push_charts(&w, &st);
@@ -1441,7 +1444,7 @@ fn run() {
                         Err(e) => show_toast(&w, &format!("Error: {}", e)),
                     }
                 }
-                None => show_toast(&w, "No oxycash*.json found in home"),
+                None => {} // cancelled
             }
         });
     }

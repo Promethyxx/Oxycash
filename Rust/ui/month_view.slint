@@ -23,19 +23,19 @@ component SummaryCard inherits Rectangle {
 
     VerticalLayout {
         padding: 14px; spacing: 0px;
-        Text { text: label; font-size: 14px; font-weight: 600; color: Palette.text3; letter-spacing: 1px; }
+        Text { text: label; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; letter-spacing: 1px; }
         Rectangle { height: 4px; }
         HorizontalLayout { alignment: space-between; height: 20px;
-            Text { text: row1-label; font-size: 14px; color: Palette.text2; vertical-alignment: center; }
-            Text { text: row1-val; font-size: 14px; font-weight: 700; color: Palette.text; vertical-alignment: center; }
+            Text { text: row1-label; font-size: 14px + Palette.font-offset; color: Palette.text2; vertical-alignment: center; }
+            Text { text: row1-val; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; vertical-alignment: center; }
         }
         HorizontalLayout { alignment: space-between; height: 20px;
-            Text { text: row2-label; font-size: 14px; color: Palette.text2; vertical-alignment: center; }
-            Text { text: row2-val; font-size: 14px; font-weight: 700; color: Palette.text; vertical-alignment: center; }
+            Text { text: row2-label; font-size: 14px + Palette.font-offset; color: Palette.text2; vertical-alignment: center; }
+            Text { text: row2-val; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; vertical-alignment: center; }
         }
         Rectangle { height: 1px; background: Palette.card-border; }
         HorizontalLayout { alignment: space-between; height: 28px;
-            Text { text: "Total"; font-size: 14px; font-weight: 600; color: Palette.text2; vertical-alignment: center; }
+            Text { text: "Total"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text2; vertical-alignment: center; }
             Text { text: total; font-size: big ? 22px : 13px; font-weight: 700; color: total-color; vertical-alignment: center; }
         }
     }
@@ -49,12 +49,12 @@ component BarCol inherits Rectangle {
     horizontal-stretch: 1; background: transparent;
     VerticalLayout {
         alignment: end; spacing: 3px;
-        Text { text: val-str; font-size: 18px; font-weight: 600; color: bar-color; horizontal-alignment: center; }
+        Text { text: val-str; font-size: 18px + Palette.font-offset; font-weight: 600; color: bar-color; horizontal-alignment: center; }
         HorizontalLayout { alignment: center; spacing: 4px; height: 80px;
             Rectangle { width: 72px; height: clamp(2px, budget-pct * 80px, 80px); border-radius: 4px; background: bar-color.with-alpha(0.3); y: 80px - self.height; }
             Rectangle { width: 72px; height: clamp(2px, paid-pct * 80px, 80px); border-radius: 4px; background: bar-color; y: 80px - self.height; }
         }
-        Text { text: label; font-size: 18px; color: Palette.text3; horizontal-alignment: center; }
+        Text { text: label; font-size: 18px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center; }
     }
 }
 
@@ -65,12 +65,12 @@ component PayRow inherits Rectangle {
     callback delete-clicked(int);
     height: 30px; background: transparent;
     HorizontalLayout { spacing: 8px; padding-top: 5px; padding-bottom: 5px;
-        Text { text: date; font-size: 14px; color: Palette.text3; vertical-alignment: center; width: 72px; }
+        Text { text: date; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 72px; }
         Rectangle { horizontal-stretch: 1; }
-        Text { text: amount-str; font-size: 14px; font-weight: 600; color: positive ? Palette.green : Palette.danger; vertical-alignment: center; }
+        Text { text: amount-str; font-size: 14px + Palette.font-offset; font-weight: 600; color: positive ? Palette.green : Palette.danger; vertical-alignment: center; }
         Rectangle { width: 28px; height: 24px; border-radius: 4px;
             TouchArea { clicked => { root.delete-clicked(idx); } }
-            Text { text: "x"; font-size: 14px; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: "x"; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
         }
     }
 }
@@ -85,7 +85,7 @@ component SubPanel inherits Rectangle {
     background: Palette.card; border-width: 1px; border-color: Palette.card-border;
     VerticalLayout {
         padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 10px; spacing: 0px;
-        if payments.length == 0 : Text { text: "No payments"; font-size: 14px; color: Palette.text3; horizontal-alignment: center; height: 28px; }
+        if payments.length == 0 : Text { text: "No payments"; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center; height: 28px; }
         for pay in payments : PayRow {
             date: pay.date; amount-str: pay.amount + " " + currency; positive: pay.amount >= 0.0; idx: pay.idx;
             delete-clicked(i) => { root.delete-pay(sec-idx, line-idx, i); }
@@ -93,20 +93,20 @@ component SubPanel inherits Rectangle {
         Rectangle { height: 1px; background: Palette.card-border; }
         // Labels
         HorizontalLayout { spacing: 6px; height: 16px;
-            Text { text: "Date"; font-size: 14px; color: Palette.text3; width: 100px; horizontal-alignment: center; }
-            Text { text: "Amount"; font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+            Text { text: "Date"; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 100px; horizontal-alignment: center; }
+            Text { text: "Amount"; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
             Rectangle { width: 36px; }
         }
         HorizontalLayout { spacing: 6px; height: 30px;
             Rectangle { border-radius: 6px; border-width: 1px; border-color: Palette.card-border; width: 100px;
-                TextInput { text <=> new-date; font-size: 14px; color: Palette.text; horizontal-alignment: center; vertical-alignment: center; }
+                TextInput { text <=> new-date; font-size: 14px + Palette.font-offset; color: Palette.text; horizontal-alignment: center; vertical-alignment: center; }
             }
             Rectangle { border-radius: 6px; border-width: 1px; border-color: Palette.card-border; horizontal-stretch: 1;
-                TextInput { text <=> new-amount; font-size: 14px; color: Palette.teal; horizontal-alignment: right; input-type: decimal; vertical-alignment: center; }
+                TextInput { text <=> new-amount; font-size: 14px + Palette.font-offset; color: Palette.teal; horizontal-alignment: right; input-type: decimal; vertical-alignment: center; }
             }
             Rectangle { width: 36px; border-radius: 6px; background: Palette.teal;
                 TouchArea { clicked => { root.add-pay(sec-idx, line-idx, new-date, new-amount); new-amount = ""; } }
-                Text { text: "+"; font-size: 16px; font-weight: 700; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
+                Text { text: "+"; font-size: 16px + Palette.font-offset; font-weight: 700; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
             }
         }
     }
@@ -134,7 +134,7 @@ component LineRow inherits Rectangle {
 
             HorizontalLayout { padding-left: 12px; padding-right: 8px; spacing: 4px;
                 // Name
-                TextInput { text: line.name; font-size: 14px; font-weight: 500; color: Palette.text;
+                TextInput { text: line.name; font-size: 14px + Palette.font-offset; font-weight: 500; color: Palette.text;
                     horizontal-stretch: 1; vertical-alignment: center;
                     accepted => { root.update-name(sec-idx, line.idx, self.text); }
                 }
@@ -142,7 +142,7 @@ component LineRow inherits Rectangle {
                 Rectangle { width: 26px; height: 26px; border-radius: 4px;
                     background: expanded ? Palette.gold.with-alpha(0.2) : transparent;
                     TouchArea { clicked => { root.toggle(line.idx); } }
-                    Text { text: expanded ? "−" : "+"; font-size: 16px; font-weight: 700;
+                    Text { text: expanded ? "−" : "+"; font-size: 16px + Palette.font-offset; font-weight: 700;
                         color: expanded ? Palette.gold : Palette.text3;
                         horizontal-alignment: center; vertical-alignment: center; }
                 }
@@ -150,38 +150,38 @@ component LineRow inherits Rectangle {
                 Rectangle { width: 26px; height: 26px; border-radius: 4px;
                     background: line.has-recurring ? Palette.blue.with-alpha(0.2) : transparent;
                     TouchArea { clicked => { root.open-recurring(sec-idx, line.idx, line.has-recurring ? line.recurring-freq : 3); } }
-                    Text { text: "↻"; font-size: 16px; font-weight: 700;
+                    Text { text: "↻"; font-size: 16px + Palette.font-offset; font-weight: 700;
                         color: line.has-recurring ? Palette.blue : Palette.text3;
                         horizontal-alignment: center; vertical-alignment: center; }
                 }
                 // Banque
                 Rectangle { width: 58px; height: 28px; border-radius: 5px; border-width: 1px;
                     border-color: Palette.card-border; background: #00000030;
-                    TextInput { text: line.banque; font-size: 14px; color: Palette.blue;
+                    TextInput { text: line.banque; font-size: 14px + Palette.font-offset; color: Palette.blue;
                         horizontal-alignment: right; input-type: decimal; vertical-alignment: center;
                         accepted => { root.update-banque(sec-idx, line.idx, self.text); } }
                 }
                 // Cash
                 Rectangle { width: 58px; height: 28px; border-radius: 5px; border-width: 1px;
                     border-color: Palette.card-border; background: #00000030;
-                    TextInput { text: line.cash; font-size: 14px; color: Palette.amber;
+                    TextInput { text: line.cash; font-size: 14px + Palette.font-offset; color: Palette.amber;
                         horizontal-alignment: right; input-type: decimal; vertical-alignment: center;
                         accepted => { root.update-cash(sec-idx, line.idx, self.text); } }
                 }
                 // Etat
                 Rectangle { width: 58px; height: 28px; background: transparent;
-                    Text { text: line.etat; font-size: 14px; font-weight: 700; color: Palette.teal; horizontal-alignment: right; vertical-alignment: center; }
+                    Text { text: line.etat; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.teal; horizontal-alignment: right; vertical-alignment: center; }
                 }
                 // Solde
                 Rectangle { width: 52px; height: 28px; background: transparent;
-                    Text { text: line.solde; font-size: 14px; font-weight: 700;
+                    Text { text: line.solde; font-size: 14px + Palette.font-offset; font-weight: 700;
                         color: line.solde-val <= 0.01 ? Palette.green : Palette.danger;
                         horizontal-alignment: right; vertical-alignment: center; }
                 }
                 // Delete
                 Rectangle { width: 24px; height: 24px; border-radius: 4px;
                     TouchArea { clicked => { root.delete-line(sec-idx, line.idx); } }
-                    Text { text: "x"; font-size: 14px; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+                    Text { text: "x"; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
                 }
             }
         }
@@ -213,20 +213,20 @@ component Section inherits Rectangle {
         Rectangle { height: 40px; background: transparent;
             TouchArea { clicked => { root.toggle-section(sec-idx); } }
             HorizontalLayout { spacing: 8px; padding-top: 10px; padding-bottom: 6px;
-                Text { text: icon; font-size: 16px; vertical-alignment: center; width: 20px; }
-                Text { text: title; font-size: 14px; font-weight: 700; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
-                Text { text: total-str + " " + currency; font-size: 14px; font-weight: 700; color: accent; vertical-alignment: center; }
-                Text { text: open ? "▾" : "▸"; font-size: 14px; color: Palette.text3; vertical-alignment: center; width: 14px; }
+                Text { text: icon; font-size: 16px + Palette.font-offset; vertical-alignment: center; width: 20px; }
+                Text { text: title; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
+                Text { text: total-str + " " + currency; font-size: 14px + Palette.font-offset; font-weight: 700; color: accent; vertical-alignment: center; }
+                Text { text: open ? "▾" : "▸"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 14px; }
             }
         }
         if open : VerticalLayout { spacing: 4px;
             HorizontalLayout { padding-left: 12px; padding-right: 8px; spacing: 4px; height: 18px;
                 Rectangle { horizontal-stretch: 1; }
                 Rectangle { width: 56px; }
-                Text { text: "BANK"; font-size: 14px; font-weight: 600; color: Palette.blue; width: 58px; horizontal-alignment: center; }
-                Text { text: "CASH"; font-size: 14px; font-weight: 600; color: Palette.amber; width: 58px; horizontal-alignment: center; }
-                Text { text: "PAID"; font-size: 14px; font-weight: 600; color: Palette.teal; width: 58px; horizontal-alignment: center; }
-                Text { text: "LEFT"; font-size: 14px; font-weight: 600; color: Palette.gold; width: 52px; horizontal-alignment: center; }
+                Text { text: "BANK"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.blue; width: 58px; horizontal-alignment: center; }
+                Text { text: "CASH"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.amber; width: 58px; horizontal-alignment: center; }
+                Text { text: "PAID"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.teal; width: 58px; horizontal-alignment: center; }
+                Text { text: "LEFT"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.gold; width: 52px; horizontal-alignment: center; }
                 Rectangle { width: 28px; }
             }
             for line[i] in lines : LineRow {
@@ -244,8 +244,8 @@ component Section inherits Rectangle {
             Rectangle { height: 38px; border-radius: 10px; border-width: 1px; border-color: Palette.card-border;
                 TouchArea { clicked => { root.add-line(sec-idx); } }
                 HorizontalLayout { padding-left: 12px; spacing: 8px;
-                    Text { text: "+"; font-size: 15px; color: Palette.text3; vertical-alignment: center; }
-                    Text { text: "Add entry"; font-size: 14px; color: Palette.text3; vertical-alignment: center; }
+                    Text { text: "+"; font-size: 15px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
+                    Text { text: "Add entry"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
                 }
             }
         }
@@ -258,10 +258,10 @@ component RegisterRow inherits Rectangle {
     in property <string> section; in property <float> amount; in property <string> currency;
     height: 32px; background: transparent;
     HorizontalLayout { spacing: 6px; padding-left: 8px; padding-right: 8px;
-        Text { text: date; font-size: 14px; color: Palette.text3; width: 80px; vertical-alignment: center; }
-        Text { text: label; font-size: 14px; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
-        Text { text: section; font-size: 14px; color: Palette.text3; width: 60px; vertical-alignment: center; }
-        Text { text: amount + " " + currency; font-size: 14px; font-weight: 600;
+        Text { text: date; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 80px; vertical-alignment: center; }
+        Text { text: label; font-size: 14px + Palette.font-offset; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
+        Text { text: section; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 60px; vertical-alignment: center; }
+        Text { text: amount + " " + currency; font-size: 14px + Palette.font-offset; font-weight: 600;
             color: amount >= 0.0 ? Palette.green : Palette.danger;
             width: 80px; horizontal-alignment: right; vertical-alignment: center; }
     }
@@ -315,12 +315,12 @@ export component MonthView inherits Rectangle {
 
             // Title + register toggle
             HorizontalLayout { spacing: 8px;
-                Text { text: month-name; font-size: 24px; font-weight: 700; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
+                Text { text: month-name; font-size: 24px + Palette.font-offset; font-weight: 700; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
                 Rectangle { width: 100px; height: 30px; border-radius: 8px; border-width: 1px;
                     border-color: show-register ? Palette.teal : Palette.card-border;
                     background: show-register ? Palette.teal.with-alpha(0.15) : transparent;
                     TouchArea { clicked => { show-register = !show-register; } }
-                    Text { text: "📋 Register"; font-size: 14px; font-weight: 600;
+                    Text { text: "📋 Register"; font-size: 14px + Palette.font-offset; font-weight: 600;
                         color: show-register ? Palette.teal : Palette.text3;
                         horizontal-alignment: center; vertical-alignment: center; }
                 }
@@ -347,7 +347,7 @@ export component MonthView inherits Rectangle {
                 // Bar chart
                 Rectangle { border-radius: 12px; background: Palette.card; border-width: 1px; border-color: Palette.card-border; height: 200px;
                     VerticalLayout { padding: 14px; spacing: 6px;
-                        Text { text: "BUDGET VS PAID"; font-size: 14px; font-weight: 600; color: Palette.text3; letter-spacing: 1px; }
+                        Text { text: "BUDGET VS PAID"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; letter-spacing: 1px; }
                         HorizontalLayout { spacing: 4px; alignment: space-around;
                             BarCol { label: "Withdrawals"; val-str: sum-withdrawals; budget-pct: chart-max > 0.0 ? chart-ret-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-ret-paid / chart-max : 0.0; bar-color: Palette.teal; }
                             BarCol { label: "Fixed"; val-str: sum-topay-b; budget-pct: chart-max > 0.0 ? chart-fix-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-fix-paid / chart-max : 0.0; bar-color: Palette.gold; }
@@ -396,20 +396,20 @@ export component MonthView inherits Rectangle {
                 border-radius: 12px; background: Palette.card; border-width: 1px; border-color: Palette.card-border;
                 VerticalLayout { padding: 12px; spacing: 4px;
                     HorizontalLayout { spacing: 8px; height: 28px;
-                        Text { text: "📋 Register"; font-size: 14px; font-weight: 700; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
+                        Text { text: "📋 Register"; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
                         Rectangle { width: 100px; height: 26px; border-radius: 6px; border-width: 1px; border-color: Palette.card-border;
                             TouchArea { clicked => { root.toggle-register-sort(); } }
-                            Text { text: register-asc ? "↑ Date asc" : "↓ Date desc"; font-size: 14px; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
+                            Text { text: register-asc ? "↑ Date asc" : "↓ Date desc"; font-size: 14px + Palette.font-offset; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
                         }
                     }
                     Rectangle { height: 1px; background: Palette.card-border; }
                     HorizontalLayout { spacing: 6px; padding-left: 8px; padding-right: 8px; height: 22px;
-                        Text { text: "Date"; font-size: 14px; font-weight: 600; color: Palette.text3; width: 80px; }
-                        Text { text: "Label"; font-size: 14px; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; }
-                        Text { text: "Section"; font-size: 14px; font-weight: 600; color: Palette.text3; width: 60px; }
-                        Text { text: "Amount"; font-size: 14px; font-weight: 600; color: Palette.text3; width: 80px; horizontal-alignment: right; }
+                        Text { text: "Date"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 80px; }
+                        Text { text: "Label"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; }
+                        Text { text: "Section"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 60px; }
+                        Text { text: "Amount"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 80px; horizontal-alignment: right; }
                     }
-                    if register-entries.length == 0 : Text { text: "No payments recorded"; font-size: 14px; color: Palette.text3; horizontal-alignment: center; height: 28px; }
+                    if register-entries.length == 0 : Text { text: "No payments recorded"; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center; height: 28px; }
                     for entry in register-entries : RegisterRow { date: entry.date; label: entry.label; section: entry.section; amount: entry.amount; currency: currency; }
                 }
             }
@@ -432,8 +432,8 @@ export component MonthView inherits Rectangle {
             border-width: 1px; border-color: Palette.card-border;
 
             VerticalLayout { padding: 12px; spacing: 2px;
-                Text { text: "↻ Recurrence  " + rec-popup-name; font-size: 16px; font-weight: 700; color: Palette.text; }
-                Text { text: "Repeat frequency"; font-size: 14px; color: Palette.text2; }
+                Text { text: "↻ Recurrence  " + rec-popup-name; font-size: 16px + Palette.font-offset; font-weight: 700; color: Palette.text; }
+                Text { text: "Repeat frequency"; font-size: 14px + Palette.font-offset; color: Palette.text2; }
 
                 // Option 1: Every month
                 Rectangle { height: 26px; background: transparent;
@@ -443,7 +443,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 1 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 1 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Every month"; font-size: 15px; color: Palette.text; vertical-alignment: center; }
+                        Text { text: "Every month"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
                 // Option 2
@@ -454,7 +454,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 2 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 2 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Every 2 months"; font-size: 15px; color: Palette.text; vertical-alignment: center; }
+                        Text { text: "Every 2 months"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
                 // Option 3
@@ -465,7 +465,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 3 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 3 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Every 3 months"; font-size: 15px; color: Palette.text; vertical-alignment: center; }
+                        Text { text: "Every 3 months"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
                 // Option 6
@@ -476,7 +476,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 6 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 6 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Every 6 months"; font-size: 15px; color: Palette.text; vertical-alignment: center; }
+                        Text { text: "Every 6 months"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
                 // Option 12
@@ -487,7 +487,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 12 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 12 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Annual"; font-size: 15px; color: Palette.text; vertical-alignment: center; }
+                        Text { text: "Annual"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
 
@@ -497,9 +497,9 @@ export component MonthView inherits Rectangle {
                     HorizontalLayout { spacing: 10px; padding-left: 4px;
                         Rectangle { width: 20px; height: 20px; border-radius: 4px; border-width: 2px;
                             border-color: rec-popup-past ? Palette.teal : Palette.text3;
-                            if rec-popup-past : Text { text: "✓"; font-size: 14px; color: Palette.teal; horizontal-alignment: center; vertical-alignment: center; }
+                            if rec-popup-past : Text { text: "✓"; font-size: 14px + Palette.font-offset; color: Palette.teal; horizontal-alignment: center; vertical-alignment: center; }
                         }
-                        Text { text: "Also apply to past months"; font-size: 14px; color: Palette.text2; vertical-alignment: center; }
+                        Text { text: "Also apply to past months"; font-size: 14px + Palette.font-offset; color: Palette.text2; vertical-alignment: center; }
                     }
                 }
 
@@ -508,17 +508,17 @@ export component MonthView inherits Rectangle {
                     // Cancel
                     Rectangle { horizontal-stretch: 1; height: 36px; border-radius: 8px;
                         TouchArea { clicked => { rec-popup-open = false; } }
-                        Text { text: "Cancel"; font-size: 14px; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
+                        Text { text: "Cancel"; font-size: 14px + Palette.font-offset; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
                     }
                     // Disable
                     Rectangle { horizontal-stretch: 1; height: 36px; border-radius: 8px;
                         TouchArea { clicked => { root.set-recurring(rec-popup-sec, rec-popup-line, 0, rec-popup-past); rec-popup-open = false; } }
-                        Text { text: "Disable"; font-size: 14px; font-weight: 600; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+                        Text { text: "Disable"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
                     }
                     // Apply
                     Rectangle { horizontal-stretch: 1; height: 36px; border-radius: 8px; background: Palette.teal;
                         TouchArea { clicked => { root.set-recurring(rec-popup-sec, rec-popup-line, rec-popup-freq, rec-popup-past); rec-popup-open = false; } }
-                        Text { text: "Apply"; font-size: 14px; font-weight: 600; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
+                        Text { text: "Apply"; font-size: 14px + Palette.font-offset; font-weight: 600; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
                     }
                 }
             }

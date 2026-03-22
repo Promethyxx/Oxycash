@@ -27,7 +27,7 @@ component MonthCell inherits Rectangle {
 
     Text {
         text: value > 0.0 ? value : "";
-        font-size: 14px;
+        font-size: 14px + Palette.font-offset;
         color: accent-color;
         horizontal-alignment: center;
     }
@@ -53,14 +53,14 @@ component ExpenseTable inherits Rectangle {
 
             Text {
                 text: section.label;
-                font-size: 15px;
+                font-size: 15px + Palette.font-offset;
                 font-weight: 700;
                 color: Palette.text;
                 horizontal-stretch: 1;
             }
             Text {
                 text: section.total;
-                font-size: 14px;
+                font-size: 14px + Palette.font-offset;
                 font-weight: 700;
                 color: accent;
             }
@@ -73,27 +73,27 @@ component ExpenseTable inherits Rectangle {
             spacing: 2px;
             height: 20px;
 
-            Text { text: "Name"; font-size: 14px; color: Palette.text3; width: 72px; }
-            Text { text: "J";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "F";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "M";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "A";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "M";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "J";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "J";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "A";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "S";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "O";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "N";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "D";  font-size: 14px; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "Total"; font-size: 14px; color: Palette.text3; width: 52px; horizontal-alignment: right; }
+            Text { text: "Name"; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 72px; }
+            Text { text: "J";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "F";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "M";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "A";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "M";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "J";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "J";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "A";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "S";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "O";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "N";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "D";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
+            Text { text: "Total"; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 52px; horizontal-alignment: right; }
         }
 
         for line in section.lines : HorizontalLayout {
             spacing: 2px;
             height: 26px;
 
-            Text { text: line.name; font-size: 14px; color: Palette.text2; width: 72px; overflow: elide; }
+            Text { text: line.name; font-size: 14px + Palette.font-offset; color: Palette.text2; width: 72px; overflow: elide; }
             MonthCell { value: line.m0;  accent-color: accent; }
             MonthCell { value: line.m1;  accent-color: accent; }
             MonthCell { value: line.m2;  accent-color: accent; }
@@ -106,7 +106,7 @@ component ExpenseTable inherits Rectangle {
             MonthCell { value: line.m9;  accent-color: accent; }
             MonthCell { value: line.m10; accent-color: accent; }
             MonthCell { value: line.m11; accent-color: accent; }
-            Text { text: line.total; font-size: 14px; font-weight: 700; color: accent; width: 52px; horizontal-alignment: right; vertical-alignment: center; }
+            Text { text: line.total; font-size: 14px + Palette.font-offset; font-weight: 700; color: accent; width: 52px; horizontal-alignment: right; vertical-alignment: center; }
         }
     }
 }
@@ -126,7 +126,7 @@ export component ExpensesView inherits Flickable {
 
         Text {
             text: "Expenses";
-            font-size: 22px;
+            font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;
         }

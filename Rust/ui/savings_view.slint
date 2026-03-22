@@ -40,7 +40,7 @@ export component SavingsView inherits Flickable {
 
         Text {
             text: "Savings";
-            font-size: 22px;
+            font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;
         }
@@ -68,7 +68,7 @@ export component SavingsView inherits Flickable {
                         border-color: Palette.card-border;
                         TextInput {
                             text: proj.label;
-                            font-size: 14px;
+                            font-size: 14px + Palette.font-offset;
                             font-weight: 700;
                             color: Palette.text;
                             vertical-alignment: center;
@@ -83,7 +83,7 @@ export component SavingsView inherits Flickable {
                         TouchArea { clicked => { root.toggle-project(proj.idx); } }
                         Text {
                             text: proj.open ? "−" : "+";
-                            font-size: 16px; font-weight: 700;
+                            font-size: 16px + Palette.font-offset; font-weight: 700;
                             color: proj.open ? Palette.gold : Palette.text3;
                             horizontal-alignment: center; vertical-alignment: center;
                         }
@@ -95,14 +95,14 @@ export component SavingsView inherits Flickable {
                         border-width: 1px; border-color: Palette.card-border;
                         TextInput {
                             text: proj.montant;
-                            font-size: 14px; color: Palette.teal;
+                            font-size: 14px + Palette.font-offset; color: Palette.teal;
                             horizontal-alignment: right; input-type: decimal;
                             vertical-alignment: center;
                             accepted => { root.update-project-field(proj.idx, "montant", self.text); }
                         }
                     }
 
-                    Text { text: "/"; font-size: 15px; font-weight: 700; color: Palette.text3; vertical-alignment: center; }
+                    Text { text: "/"; font-size: 15px + Palette.font-offset; font-weight: 700; color: Palette.text3; vertical-alignment: center; }
 
                     // Cible
                     Rectangle {
@@ -110,7 +110,7 @@ export component SavingsView inherits Flickable {
                         border-width: 1px; border-color: Palette.card-border;
                         TextInput {
                             text: proj.cible;
-                            font-size: 14px; color: Palette.gold;
+                            font-size: 14px + Palette.font-offset; color: Palette.gold;
                             horizontal-alignment: right; input-type: decimal;
                             vertical-alignment: center;
                             accepted => { root.update-project-field(proj.idx, "cible", self.text); }
@@ -121,29 +121,25 @@ export component SavingsView inherits Flickable {
                     Rectangle {
                         width: 26px; height: 26px; border-radius: 4px;
                         TouchArea { clicked => { root.delete-project(proj.idx); } }
-                        Text { text: "x"; font-size: 14px; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+                        Text { text: "x"; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
                     }
                 }
 
                 // Progress bar (project level)
                 if proj.cible > 0.0 : VerticalLayout {
                     spacing: 2px;
-                    HorizontalLayout {
-                        alignment: start;
+                    Rectangle {
+                        height: 8px; border-radius: 4px; background: Palette.card-border;
                         Rectangle {
-                            height: 6px; border-radius: 3px; background: Palette.card-border;
-                            horizontal-stretch: 1;
-                            Rectangle {
-                                x: 0px; y: 0px;
-                                height: 6px; border-radius: 3px;
-                                width: clamp(parent.width * proj.percent / 100, 0px, parent.width);
-                                background: proj.percent >= 100 ? Palette.green : Palette.teal;
-                            }
+                            x: 0px; y: 0px;
+                            height: 8px; border-radius: 4px;
+                            width: parent.width * proj.percent / 100;
+                            background: proj.percent >= 100 ? Palette.green : Palette.teal;
                         }
                     }
                     Text {
                         text: proj.percent + "%";
-                        font-size: 14px; font-weight: 700;
+                        font-size: 14px + Palette.font-offset; font-weight: 700;
                         color: proj.percent >= 100 ? Palette.green : Palette.teal;
                     }
                 }
@@ -175,7 +171,7 @@ export component SavingsView inherits Flickable {
                                     border-color: Palette.card-border;
                                     TextInput {
                                         text: row.name;
-                                        font-size: 14px; color: Palette.text;
+                                        font-size: 14px + Palette.font-offset; color: Palette.text;
                                         vertical-alignment: center;
                                         accepted => { root.update-row-field(proj.idx, row.idx, "name", self.text); }
                                     }
@@ -188,14 +184,14 @@ export component SavingsView inherits Flickable {
                                     border-color: Palette.card-border;
                                     TextInput {
                                         text: row.montant;
-                                        font-size: 14px; color: Palette.teal;
+                                        font-size: 14px + Palette.font-offset; color: Palette.teal;
                                         horizontal-alignment: right; input-type: decimal;
                                         vertical-alignment: center;
                                         accepted => { root.update-row-field(proj.idx, row.idx, "montant", self.text); }
                                     }
                                 }
 
-                                Text { text: "/"; font-size: 14px; color: Palette.text3; vertical-alignment: center; }
+                                Text { text: "/"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
 
                                 // Row cible
                                 Rectangle {
@@ -204,7 +200,7 @@ export component SavingsView inherits Flickable {
                                     border-color: Palette.card-border;
                                     TextInput {
                                         text: row.cible;
-                                        font-size: 14px; color: Palette.gold;
+                                        font-size: 14px + Palette.font-offset; color: Palette.gold;
                                         horizontal-alignment: right; input-type: decimal;
                                         vertical-alignment: center;
                                         accepted => { root.update-row-field(proj.idx, row.idx, "cible", self.text); }
@@ -215,29 +211,25 @@ export component SavingsView inherits Flickable {
                                 Rectangle {
                                     width: 24px; height: 24px; border-radius: 4px;
                                     TouchArea { clicked => { root.delete-row(proj.idx, row.idx); } }
-                                    Text { text: "x"; font-size: 14px; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+                                    Text { text: "x"; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
                                 }
                             }
 
                             // Row progress
                             if row.cible > 0.0 : VerticalLayout {
                                 spacing: 2px;
-                                HorizontalLayout {
-                                    alignment: start;
+                                Rectangle {
+                                    height: 6px; border-radius: 3px; background: Palette.card-border;
                                     Rectangle {
-                                        height: 5px; border-radius: 3px; background: Palette.card-border;
-                                        horizontal-stretch: 1;
-                                        Rectangle {
-                                            x: 0px; y: 0px;
-                                            height: 5px; border-radius: 3px;
-                                            width: clamp(parent.width * row.percent / 100, 0px, parent.width);
-                                            background: row.percent >= 100 ? Palette.green : Palette.teal;
-                                        }
+                                        x: 0px; y: 0px;
+                                        height: 6px; border-radius: 3px;
+                                        width: parent.width * row.percent / 100;
+                                        background: row.percent >= 100 ? Palette.green : Palette.teal;
                                     }
                                 }
                                 Text {
                                     text: row.percent + "%";
-                                    font-size: 14px; font-weight: 700;
+                                    font-size: 12px + Palette.font-offset; font-weight: 700;
                                     color: row.percent >= 100 ? Palette.green : Palette.teal;
                                 }
                             }
@@ -251,8 +243,8 @@ export component SavingsView inherits Flickable {
                         TouchArea { clicked => { root.add-row(proj.idx); } }
                         HorizontalLayout {
                             padding-left: 12px; spacing: 6px;
-                            Text { text: "+"; font-size: 14px; color: Palette.text3; vertical-alignment: center; }
-                            Text { text: "Add entry"; font-size: 14px; color: Palette.text3; vertical-alignment: center; }
+                            Text { text: "+"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
+                            Text { text: "Add entry"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
                         }
                     }
                 }
@@ -266,7 +258,7 @@ export component SavingsView inherits Flickable {
             TouchArea { clicked => { root.add-project(); } }
             Text {
                 text: "+ New project";
-                font-size: 14px; font-weight: 600;
+                font-size: 14px + Palette.font-offset; font-weight: 600;
                 color: Palette.text3;
                 horizontal-alignment: center;
             }
