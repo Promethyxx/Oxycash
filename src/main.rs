@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 slint::include_modules!();
 
 mod model;
@@ -666,7 +668,7 @@ fn push_i18n(window: &AppWindow, lang: &str) {
 }
 
 #[cfg(target_os = "android")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn android_main(app: slint::android::AndroidApp) {
     slint::android::init(app).unwrap();
     run();
@@ -695,6 +697,8 @@ fn run() {
         push_viability(&window, &st);
         push_settings(&window, &st);
         apply_theme(&window, true);
+        #[cfg(target_os = "android")]
+        window.set_status_bar_height(48.0);
         push_i18n(&window, &st.storage.cfg.lang);
         Palette::get(&window).set_font_offset(st.storage.cfg.font_scale as f32);
     }
@@ -1477,19 +1481,31 @@ fn run() {
             let st = state_ref.lock().unwrap();
             let json = st.storage.export_json();
             let fname = format!("oxycash-{}.json", model::today());
-            drop(st); // release lock before dialog
-            let path = rfd::FileDialog::new()
-                .set_file_name(&fname)
-                .add_filter("JSON", &["json"])
-                .save_file();
-            match path {
-                Some(p) => {
-                    match std::fs::write(&p, &json) {
-                        Ok(_) => show_toast(&w, &format!("Exported ✓")),
-                        Err(e) => show_toast(&w, &format!("Error: {}", e)),
+            drop(st);
+            #[cfg(not(target_os = "android"))]
+            {
+                let path = rfd::FileDialog::new()
+                    .set_file_name(&fname)
+                    .add_filter("JSON", &["json"])
+                    .save_file();
+                match path {
+                    Some(p) => {
+                        match std::fs::write(&p, &json) {
+                            Ok(_) => show_toast(&w, "Exported ✓"),
+                            Err(e) => show_toast(&w, &format!("Error: {}", e)),
+                        }
                     }
+                    None => {}
                 }
-                None => {} // cancelled
+            }
+            #[cfg(target_os = "android")]
+            {
+                let dir = dirs::data_local_dir().unwrap_or_default();
+                let path = dir.join(&fname);
+                match std::fs::write(&path, &json) {
+                    Ok(_) => show_toast(&w, "Exported ✓"),
+                    Err(e) => show_toast(&w, &format!("Error: {}", e)),
+                }
             }
         });
     }
@@ -1500,30 +1516,35 @@ fn run() {
         let ww = window.as_weak();
         window.on_do_import(move || {
             let w = ww.unwrap();
-            let path = rfd::FileDialog::new()
-                .add_filter("JSON", &["json"])
-                .pick_file();
-            match path {
-                Some(p) => {
-                    match std::fs::read_to_string(&p) {
-                        Ok(raw) => {
-                            let mut st = state_ref.lock().unwrap();
-                            if st.storage.import_json(&raw) {
-                                push_month(&w, &st);
-                                push_charts(&w, &st);
-                                push_debts(&w, &st);
-                                push_savings(&w, &st);
-                                push_expenses(&w, &st);
-                                show_toast(&w, "Import OK ✓");
-                            } else {
-                                show_toast(&w, "Invalid JSON format");
+            #[cfg(not(target_os = "android"))]
+            {
+                let path = rfd::FileDialog::new()
+                    .add_filter("JSON", &["json"])
+                    .pick_file();
+                match path {
+                    Some(p) => {
+                        match std::fs::read_to_string(&p) {
+                            Ok(raw) => {
+                                let mut st = state_ref.lock().unwrap();
+                                if st.storage.import_json(&raw) {
+                                    push_month(&w, &st);
+                                    push_charts(&w, &st);
+                                    push_debts(&w, &st);
+                                    push_savings(&w, &st);
+                                    push_expenses(&w, &st);
+                                    show_toast(&w, "Import OK ✓");
+                                } else {
+                                    show_toast(&w, "Invalid JSON format");
+                                }
                             }
+                            Err(e) => show_toast(&w, &format!("Error: {}", e)),
                         }
-                        Err(e) => show_toast(&w, &format!("Error: {}", e)),
                     }
+                    None => {}
                 }
-                None => {} // cancelled
             }
+            #[cfg(target_os = "android")]
+            show_toast(&w, "Import not available on Android");
         });
     }
 
