@@ -1,7 +1,9 @@
 // oxycash-rs - ui/settings.slint
 // Full port of build_config_view() from special_views.py
 
+import { I18n } from "i18n.slint";
 import { Palette } from "palette.slint";
+import { I18n } from "i18n.slint";
 
 export struct ProfileItem {
     name: string,
@@ -152,7 +154,7 @@ export component SettingsView inherits Flickable {
         spacing: 10px;
 
         Text {
-            text: "Configuration";
+            text: I18n.cfg-title;
             font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;
@@ -306,7 +308,7 @@ export component SettingsView inherits Flickable {
                         vertical-alignment: center;
                     }
                     Text {
-                        text: is-dark ? "Dark — switch to light" : "Light — switch to dark";
+                        text: is-dark ? I18n.cfg-dark-to-light : I18n.cfg-light-to-dark;
                         font-size: 15px + Palette.font-offset;
                         font-weight: 600;
                         color: Palette.text;
@@ -320,9 +322,9 @@ export component SettingsView inherits Flickable {
         Card {
             title: "WebDAV (Nextcloud, kDrive…)";
 
-            InputField { label-text: "WebDAV URL"; value <=> root.dav-url; }
-            InputField { label-text: "Username";   value <=> root.dav-user; }
-            InputField { label-text: "Password";   value <=> root.dav-pass; is-password: true; }
+            InputField { label-text: I18n.cfg-url; value <=> root.dav-url; }
+            InputField { label-text: I18n.cfg-user;   value <=> root.dav-user; }
+            InputField { label-text: I18n.cfg-password;   value <=> root.dav-pass; is-password: true; }
 
             HorizontalLayout {
                 spacing: 8px;
@@ -363,7 +365,7 @@ export component SettingsView inherits Flickable {
             title: "Import";
 
             Text {
-                text: "Import from ~/.oxycash/ folder";
+                text: "Import from file";
                 font-size: 14px + Palette.font-offset;
                 color: Palette.text3;
             }

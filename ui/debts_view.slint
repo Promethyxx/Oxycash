@@ -2,6 +2,8 @@
 // Port of build_dettes_view() in special_views.py — fully editable
 
 import { Palette } from "palette.slint";
+import { I18n } from "i18n.slint";
+import { I18n } from "i18n.slint";
 
 export struct DebtItem {
     rep: string,
@@ -71,7 +73,7 @@ component DebtCard inherits Rectangle {
         HorizontalLayout {
             spacing: 6px;
 
-            Text { text: "Rep"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 28px; }
+            Text { text: I18n.deb-rep; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 28px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -88,7 +90,7 @@ component DebtCard inherits Rectangle {
                 }
             }
 
-            Text { text: "N°"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 18px; }
+            Text { text: I18n.deb-pursuit; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 18px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -110,7 +112,7 @@ component DebtCard inherits Rectangle {
         HorizontalLayout {
             spacing: 6px;
 
-            Text { text: "Due"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 28px; }
+            Text { text: I18n.deb-due; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 28px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -129,7 +131,7 @@ component DebtCard inherits Rectangle {
                 }
             }
 
-            Text { text: "Neg"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 26px; }
+            Text { text: I18n.deb-neg; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 26px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -153,7 +155,7 @@ component DebtCard inherits Rectangle {
         HorizontalLayout {
             spacing: 6px;
 
-            Text { text: "Status"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 40px; }
+            Text { text: I18n.deb-status; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 40px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -170,7 +172,7 @@ component DebtCard inherits Rectangle {
                 }
             }
 
-            Text { text: "Date"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 30px; }
+            Text { text: I18n.deb-date; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; width: 30px; }
             Rectangle {
                 horizontal-stretch: 1;
                 height: 28px;
@@ -207,7 +209,7 @@ export component DebtsView inherits Flickable {
         spacing: 10px;
 
         Text {
-            text: "Debts";
+            text: I18n.deb-title;
             font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;
@@ -228,19 +230,19 @@ export component DebtsView inherits Flickable {
                 VerticalLayout {
                     horizontal-stretch: 1;
                     spacing: 2px;
-                    Text { text: "Total due";       font-size: 14px + Palette.font-offset;  font-weight: 600; color: Palette.text3; }
+                    Text { text: I18n.deb-total-due;       font-size: 14px + Palette.font-offset;  font-weight: 600; color: Palette.text3; }
                     Text { text: total-due + " " + currency; font-size: 18px + Palette.font-offset; font-weight: 700; color: Palette.danger; }
                 }
                 VerticalLayout {
                     horizontal-stretch: 1;
                     spacing: 2px;
-                    Text { text: "Negotiated";      font-size: 14px + Palette.font-offset;  font-weight: 600; color: Palette.text3; }
+                    Text { text: I18n.deb-negotiated;      font-size: 14px + Palette.font-offset;  font-weight: 600; color: Palette.text3; }
                     Text { text: total-neg + " " + currency; font-size: 18px + Palette.font-offset; font-weight: 700; color: Palette.green; }
                 }
                 VerticalLayout {
                     horizontal-stretch: 1;
                     spacing: 2px;
-                    Text { text: "Settled";         font-size: 14px + Palette.font-offset;  font-weight: 600; color: Palette.text3; }
+                    Text { text: I18n.deb-settled;         font-size: 14px + Palette.font-offset;  font-weight: 600; color: Palette.text3; }
                     Text { text: settled;            font-size: 18px + Palette.font-offset; font-weight: 700; color: Palette.teal; }
                 }
             }
@@ -263,7 +265,7 @@ export component DebtsView inherits Flickable {
             border-color: Palette.card-border;
             TouchArea { clicked => { root.add-debt(); } }
             Text {
-                text: "+ Add debt";
+                text: I18n.deb-add;
                 font-size: 14px + Palette.font-offset;
                 font-weight: 600;
                 color: Palette.text3;

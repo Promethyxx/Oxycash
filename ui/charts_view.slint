@@ -1,7 +1,9 @@
 // oxycash-rs - ui/charts_view.slint
 // Port of charts_view.py - annual overview: 6 summary cards + monthly breakdown table
 
+import { I18n } from "i18n.slint";
 import { Palette } from "palette.slint";
+import { I18n } from "i18n.slint";
 
 component SummaryCard inherits Rectangle {
     in property <string> label;
@@ -94,7 +96,7 @@ export component ChartsView inherits Rectangle {
         spacing: 10px;
 
         Text {
-            text: "Charts";
+            text: I18n.charts-title;
             font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;
@@ -103,22 +105,22 @@ export component ChartsView inherits Rectangle {
         // Row 1
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { width: (root.width - 36px) / 2; label: "Income";      value: total-income;      value-color: income-color; }
-            SummaryCard { width: (root.width - 36px) / 2; label: "Paid";        value: total-paid;        value-color: paid-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-income;      value: total-income;      value-color: income-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-paid;        value: total-paid;        value-color: paid-color; }
         }
 
         // Row 2
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { width: (root.width - 36px) / 2; label: "To pay";      value: total-to-pay;      value-color: to-pay-color; }
-            SummaryCard { width: (root.width - 36px) / 2; label: "Withdrawals"; value: total-withdrawals; value-color: withdrawals-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-to-pay;      value: total-to-pay;      value-color: to-pay-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-withdrawals; value: total-withdrawals; value-color: withdrawals-color; }
         }
 
         // Row 3
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { width: (root.width - 36px) / 2; label: "Forecast";    value: total-forecast;    value-color: forecast-color; }
-            SummaryCard { width: (root.width - 36px) / 2; label: "Balance";     value: total-balance;     value-color: balance-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-forecast;    value: total-forecast;    value-color: forecast-color; }
+            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-balance;     value: total-balance;     value-color: balance-color; }
         }
 
         // Annual cumulative card
@@ -133,7 +135,7 @@ export component ChartsView inherits Rectangle {
                 padding: 14px;
 
                 Text {
-                    text: "Annual cumulative";
+                    text: I18n.charts-cumul;
                     font-size: 15px + Palette.font-offset;
                     font-weight: 600;
                     color: Palette.text2;
@@ -168,9 +170,9 @@ export component ChartsView inherits Rectangle {
                     height: 24px;
 
                     Text { text: "";         width: 36px; }
-                    Text { text: "Income";   font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: "Exp.";     font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: "Forecast"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: I18n.charts-income;   font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: I18n.charts-exp;     font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: I18n.charts-forecast; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
                 }
 
                 Rectangle { height: 1px; background: Palette.card-border; }
@@ -192,7 +194,7 @@ export component ChartsView inherits Rectangle {
                     padding-right: 4px;
                     height: 28px;
 
-                    Text { text: "Total"; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; width: 36px; }
+                    Text { text: I18n.col-total; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; width: 36px; }
                     Text { text: total-income;   font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
                     Text { text: total-paid;     font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
                     Text { text: total-forecast; font-size: 14px + Palette.font-offset; font-weight: 700; color: forecast-color; horizontal-stretch: 1; horizontal-alignment: right; }

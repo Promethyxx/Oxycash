@@ -3,8 +3,9 @@ slint::include_modules!();
 mod model;
 mod storage;
 mod theme;
+mod i18n;
 
-use model::{detect_budget_month, fmt, fmt_sign, today, apply_recurring, Month, Payment, Line, Recurring, Dette, EpargneSondage, SavingsProject, SavingsRow, FraisLine, MONTHS};
+use model::{detect_budget_month, fmt, fmt_sign, today, Month, Payment, Line, Recurring, Dette, SavingsProject, SavingsRow, FraisLine, MONTHS};
 use storage::{Storage, SyncStatus, save_config};
 use theme::{DARK, LIGHT};
 
@@ -565,6 +566,7 @@ fn apply_theme(window: &AppWindow, is_dark: bool) {
     pal.set_purple(hex_color(p.purple));
 }
 
+
 // --- Push settings data to window
 fn push_settings(window: &AppWindow, state: &AppState) {
     let cfg = &state.storage.cfg;
@@ -586,6 +588,74 @@ fn push_settings(window: &AppWindow, state: &AppState) {
     window.set_settings_currency_edit(cfg.currency.clone().into());
     window.set_profile_name(prof.name.clone().into());
     window.set_currency(cfg.currency.clone().into());
+}
+
+// --- Push i18n strings to I18n global
+fn push_i18n(window: &AppWindow, lang: &str) {
+    let tr = i18n::get_translations(lang);
+    let i = I18n::get(window);
+    macro_rules! set {
+        ($prop:ident, $key:expr) => {
+            if let Some(&v) = tr.get($key) {
+                i.$prop(slint::SharedString::from(v));
+            }
+        };
+    }
+    set!(set_jan,"jan"); set!(set_feb,"feb"); set!(set_mar,"mar"); set!(set_apr,"apr");
+    set!(set_mai,"mai"); set!(set_jun,"jun"); set!(set_jul,"jul"); set!(set_aug,"aug");
+    set!(set_sep,"sep"); set!(set_oct,"oct"); set!(set_nov,"nov"); set!(set_dec,"dec");
+    set!(set_tab_debts,"tab_debts"); set!(set_tab_savings,"tab_savings");
+    set!(set_tab_expenses,"tab_expenses"); set!(set_tab_viability,"tab_viability");
+    set!(set_tab_charts,"tab_charts"); set!(set_tab_config,"tab_config");
+    set!(set_card_income,"card_income"); set!(set_card_withdrawals,"card_withdrawals");
+    set!(set_card_paid,"card_paid"); set!(set_card_to_pay,"card_to_pay");
+    set!(set_card_forecast,"card_forecast"); set!(set_card_balance,"card_balance");
+    set!(set_col_bank,"col_bank"); set!(set_col_cash,"col_cash"); set!(set_col_total,"col_total");
+    set!(set_col_to_withdraw,"col_to_withdraw"); set!(set_col_withdrawn,"col_withdrawn");
+    set!(set_sec_income,"sec_income"); set!(set_sec_withdrawals,"sec_withdrawals");
+    set!(set_sec_fixed,"sec_fixed"); set!(set_sec_variable,"sec_variable");
+    set!(set_col_bank_hdr,"col_bank_hdr"); set!(set_col_cash_hdr,"col_cash_hdr");
+    set!(set_col_paid,"col_paid"); set!(set_col_left,"col_left");
+    set!(set_chart_budget_vs,"chart_budget_vs"); set!(set_chart_withdrawals,"chart_withdrawals");
+    set!(set_chart_fixed,"chart_fixed"); set!(set_chart_variable,"chart_variable");
+    set!(set_reg_title,"reg_title"); set!(set_reg_date_asc,"reg_date_asc"); set!(set_reg_date_desc,"reg_date_desc");
+    set!(set_reg_date,"reg_date"); set!(set_reg_label,"reg_label");
+    set!(set_reg_section,"reg_section"); set!(set_reg_amount,"reg_amount");
+    set!(set_reg_no_payments,"reg_no_payments");
+    set!(set_pay_date,"pay_date"); set!(set_pay_amount,"pay_amount"); set!(set_pay_no,"pay_no");
+    set!(set_add_entry,"add_entry"); set!(set_new_entry,"new_entry");
+    set!(set_rec_title,"rec_title"); set!(set_rec_frequency,"rec_frequency");
+    set!(set_rec_every_1,"rec_every_1"); set!(set_rec_every_2,"rec_every_2");
+    set!(set_rec_every_3,"rec_every_3"); set!(set_rec_every_6,"rec_every_6");
+    set!(set_rec_every_12,"rec_every_12"); set!(set_rec_past,"rec_past");
+    set!(set_rec_cancel,"rec_cancel"); set!(set_rec_disable,"rec_disable"); set!(set_rec_apply,"rec_apply");
+    set!(set_deb_title,"deb_title"); set!(set_deb_total_due,"deb_total_due");
+    set!(set_deb_negotiated,"deb_negotiated"); set!(set_deb_settled,"deb_settled");
+    set!(set_deb_add,"deb_add"); set!(set_deb_rep,"deb_rep"); set!(set_deb_pursuit,"deb_pursuit");
+    set!(set_deb_due,"deb_due"); set!(set_deb_neg,"deb_neg");
+    set!(set_deb_status,"deb_status"); set!(set_deb_date,"deb_date");
+    set!(set_sav_title,"sav_title"); set!(set_sav_add_project,"sav_add_project"); set!(set_sav_add_entry,"sav_add_entry");
+    set!(set_exp_title,"exp_title"); set!(set_exp_name,"exp_name"); set!(set_exp_total,"exp_total");
+    set!(set_via_title,"via_title"); set!(set_via_subtitle,"via_subtitle");
+    set!(set_via_columns,"via_columns"); set!(set_via_add_col,"via_add_col");
+    set!(set_via_generate,"via_generate"); set!(set_via_clear,"via_clear");
+    set!(set_via_add_bracket,"via_add_bracket"); set!(set_via_no_brackets,"via_no_brackets");
+    set!(set_via_balance,"via_balance");
+    set!(set_charts_title,"charts_title"); set!(set_charts_income,"charts_income");
+    set!(set_charts_paid,"charts_paid"); set!(set_charts_to_pay,"charts_to_pay");
+    set!(set_charts_withdrawals,"charts_withdrawals"); set!(set_charts_forecast,"charts_forecast");
+    set!(set_charts_balance,"charts_balance"); set!(set_charts_cumul,"charts_cumul");
+    set!(set_charts_exp,"charts_exp");
+    set!(set_cfg_title,"cfg_title"); set!(set_cfg_profiles,"cfg_profiles");
+    set!(set_cfg_add_profile,"cfg_add_profile"); set!(set_cfg_use,"cfg_use");
+    set!(set_cfg_currency,"cfg_currency"); set!(set_cfg_theme,"cfg_theme");
+    set!(set_cfg_dark_to_light,"cfg_dark_to_light"); set!(set_cfg_light_to_dark,"cfg_light_to_dark");
+    set!(set_cfg_webdav,"cfg_webdav"); set!(set_cfg_url,"cfg_url");
+    set!(set_cfg_user,"cfg_user"); set!(set_cfg_password,"cfg_password");
+    set!(set_cfg_save,"cfg_save"); set!(set_cfg_test,"cfg_test"); set!(set_cfg_clear,"cfg_clear");
+    set!(set_cfg_export,"cfg_export"); set!(set_cfg_export_btn,"cfg_export_btn");
+    set!(set_cfg_import,"cfg_import"); set!(set_cfg_import_btn,"cfg_import_btn");
+    set!(set_cfg_data,"cfg_data"); set!(set_cfg_reset,"cfg_reset");
 }
 
 #[cfg(target_os = "android")]
@@ -618,6 +688,7 @@ fn run() {
         push_viability(&window, &st);
         push_settings(&window, &st);
         apply_theme(&window, true);
+        push_i18n(&window, &st.storage.cfg.lang);
         Palette::get(&window).set_font_offset(st.storage.cfg.font_scale as f32);
     }
 
@@ -908,7 +979,7 @@ fn run() {
         });
     }
 
-    // Toggle lang (visual only for now)
+    // Toggle lang
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
@@ -917,8 +988,8 @@ fn run() {
             let mut st = state_ref.lock().unwrap();
             let new_lang = if st.storage.cfg.lang == "en" { "fr" } else { "en" };
             st.storage.set_lang(new_lang);
-            // Update label: show the OTHER lang as the button text
             w.set_lang_label(if new_lang == "en" { "FR" } else { "EN" }.into());
+            push_i18n(&w, new_lang);
             show_toast(&w, &format!("🌐 {}", new_lang.to_uppercase()));
         });
     }

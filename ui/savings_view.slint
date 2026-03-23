@@ -2,6 +2,8 @@
 // Port of build_epargne_view() — savings projects with sub-rows
 
 import { Palette } from "palette.slint";
+import { I18n } from "i18n.slint";
+import { I18n } from "i18n.slint";
 
 export struct SavingsRowItem {
     name: string,
@@ -39,7 +41,7 @@ export component SavingsView inherits Flickable {
         spacing: 10px;
 
         Text {
-            text: "Savings";
+            text: I18n.sav-title;
             font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;
@@ -244,7 +246,7 @@ export component SavingsView inherits Flickable {
                         HorizontalLayout {
                             padding-left: 12px; spacing: 6px;
                             Text { text: "+"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
-                            Text { text: "Add entry"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
+                            Text { text: I18n.sav-add-entry; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
                         }
                     }
                 }
@@ -257,7 +259,7 @@ export component SavingsView inherits Flickable {
             border-width: 1px; border-color: Palette.card-border;
             TouchArea { clicked => { root.add-project(); } }
             Text {
-                text: "+ New project";
+                text: I18n.sav-add-project;
                 font-size: 14px + Palette.font-offset; font-weight: 600;
                 color: Palette.text3;
                 horizontal-alignment: center;

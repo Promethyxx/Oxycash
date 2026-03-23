@@ -2,6 +2,8 @@
 // Basic viability table: columns + paliers + balance
 
 import { Palette } from "palette.slint";
+import { I18n } from "i18n.slint";
+import { I18n } from "i18n.slint";
 
 export struct ViaColumn {
     name: string,
@@ -41,8 +43,8 @@ export component ViabilityView inherits Flickable {
         padding: 14px;
         spacing: 10px;
 
-        Text { text: "Viability"; font-size: 24px + Palette.font-offset; font-weight: 700; color: Palette.text; }
-        Text { text: "Monthly simulation by salary bracket"; font-size: 15px + Palette.font-offset; color: Palette.text2; }
+        Text { text: I18n.via-title; font-size: 24px + Palette.font-offset; font-weight: 700; color: Palette.text; }
+        Text { text: I18n.via-subtitle; font-size: 15px + Palette.font-offset; color: Palette.text2; }
 
         // ── Columns config ──
         Rectangle {
@@ -52,7 +54,7 @@ export component ViabilityView inherits Flickable {
             VerticalLayout {
                 padding: 12px; spacing: 6px;
 
-                Text { text: "Columns"; font-size: 15px + Palette.font-offset; font-weight: 700; color: Palette.text; }
+                Text { text: I18n.via-columns; font-size: 15px + Palette.font-offset; font-weight: 700; color: Palette.text; }
 
                 for col in columns : HorizontalLayout {
                     spacing: 4px; height: 32px;
@@ -103,7 +105,7 @@ export component ViabilityView inherits Flickable {
                         horizontal-stretch: 1; height: 32px; border-radius: 8px;
                         border-width: 1px; border-color: Palette.card-border;
                         TouchArea { clicked => { root.add-column(); } }
-                        Text { text: "+ Column"; font-size: 14px + Palette.font-offset; color: Palette.text3;
+                        Text { text: I18n.via-add-col; font-size: 14px + Palette.font-offset; color: Palette.text3;
                             horizontal-alignment: center; vertical-alignment: center; }
                     }
                 }
@@ -117,7 +119,7 @@ export component ViabilityView inherits Flickable {
             Rectangle {
                 horizontal-stretch: 1; height: 36px; border-radius: 8px; background: Palette.teal;
                 TouchArea { clicked => { root.generate-paliers(); } }
-                Text { text: "▶ Generate"; font-size: 15px + Palette.font-offset; font-weight: 600; color: #1a1a1a;
+                Text { text: I18n.via-generate; font-size: 15px + Palette.font-offset; font-weight: 600; color: #1a1a1a;
                     horizontal-alignment: center; vertical-alignment: center; }
             }
 
@@ -125,14 +127,14 @@ export component ViabilityView inherits Flickable {
                 width: 100px; height: 36px; border-radius: 8px;
                 border-width: 1px; border-color: Palette.danger;
                 TouchArea { clicked => { root.clear-paliers(); } }
-                Text { text: "Clear all"; font-size: 14px + Palette.font-offset; color: Palette.danger;
+                Text { text: I18n.via-clear; font-size: 14px + Palette.font-offset; color: Palette.danger;
                     horizontal-alignment: center; vertical-alignment: center; }
             }
         }
 
         // ── Paliers table ──
         if paliers.length == 0 : Text {
-            text: "No brackets yet — click ▶ Generate";
+            text: I18n.via-no-brackets;
             font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center;
         }
 
@@ -151,7 +153,7 @@ export component ViabilityView inherits Flickable {
                         color: col.is-income ? Palette.green : Palette.text3;
                         horizontal-stretch: 1; horizontal-alignment: center;
                     }
-                    Text { text: "Balance"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.gold;
+                    Text { text: I18n.via-balance; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.gold;
                         width: 70px; horizontal-alignment: right; }
                 }
 
@@ -186,7 +188,7 @@ export component ViabilityView inherits Flickable {
                     height: 32px; border-radius: 8px;
                     border-width: 1px; border-color: Palette.card-border;
                     TouchArea { clicked => { root.add-palier(); } }
-                    Text { text: "+ Add bracket"; font-size: 14px + Palette.font-offset; color: Palette.text3;
+                    Text { text: I18n.via-add-bracket; font-size: 14px + Palette.font-offset; color: Palette.text3;
                         horizontal-alignment: center; vertical-alignment: center; }
                 }
             }

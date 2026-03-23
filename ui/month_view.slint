@@ -1,6 +1,8 @@
 // oxycash-rs - ui/month_view.slint
 
 import { Palette } from "palette.slint";
+import { I18n } from "i18n.slint";
+import { I18n } from "i18n.slint";
 
 export struct LineItem {
     name: string, banque: float, cash: float, etat: string, solde: string,
@@ -35,7 +37,7 @@ component SummaryCard inherits Rectangle {
         }
         Rectangle { height: 1px; background: Palette.card-border; }
         HorizontalLayout { alignment: space-between; height: 28px;
-            Text { text: "Total"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text2; vertical-alignment: center; }
+            Text { text: I18n.col-total; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text2; vertical-alignment: center; }
             Text { text: total; font-size: big ? 22px : 13px; font-weight: 700; color: total-color; vertical-alignment: center; }
         }
     }
@@ -85,7 +87,7 @@ component SubPanel inherits Rectangle {
     background: Palette.card; border-width: 1px; border-color: Palette.card-border;
     VerticalLayout {
         padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 10px; spacing: 0px;
-        if payments.length == 0 : Text { text: "No payments"; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center; height: 28px; }
+        if payments.length == 0 : Text { text: I18n.pay-no; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center; height: 28px; }
         for pay in payments : PayRow {
             date: pay.date; amount-str: pay.amount + " " + currency; positive: pay.amount >= 0.0; idx: pay.idx;
             delete-clicked(i) => { root.delete-pay(sec-idx, line-idx, i); }
@@ -93,8 +95,8 @@ component SubPanel inherits Rectangle {
         Rectangle { height: 1px; background: Palette.card-border; }
         // Labels
         HorizontalLayout { spacing: 6px; height: 16px;
-            Text { text: "Date"; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 100px; horizontal-alignment: center; }
-            Text { text: "Amount"; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+            Text { text: I18n.pay-date; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 100px; horizontal-alignment: center; }
+            Text { text: I18n.pay-amount; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
             Rectangle { width: 36px; }
         }
         HorizontalLayout { spacing: 6px; height: 30px;
@@ -223,10 +225,10 @@ component Section inherits Rectangle {
             HorizontalLayout { padding-left: 12px; padding-right: 8px; spacing: 4px; height: 18px;
                 Rectangle { horizontal-stretch: 1; }
                 Rectangle { width: 56px; }
-                Text { text: "BANK"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.blue; width: 58px; horizontal-alignment: center; }
-                Text { text: "CASH"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.amber; width: 58px; horizontal-alignment: center; }
-                Text { text: "PAID"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.teal; width: 58px; horizontal-alignment: center; }
-                Text { text: "LEFT"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.gold; width: 52px; horizontal-alignment: center; }
+                Text { text: I18n.col-bank; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.blue; width: 58px; horizontal-alignment: center; }
+                Text { text: I18n.col-cash; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.amber; width: 58px; horizontal-alignment: center; }
+                Text { text: I18n.card-paid; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.teal; width: 58px; horizontal-alignment: center; }
+                Text { text: I18n.col-left; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.gold; width: 52px; horizontal-alignment: center; }
                 Rectangle { width: 28px; }
             }
             for line[i] in lines : LineRow {
@@ -245,7 +247,7 @@ component Section inherits Rectangle {
                 TouchArea { clicked => { root.add-line(sec-idx); } }
                 HorizontalLayout { padding-left: 12px; spacing: 8px;
                     Text { text: "+"; font-size: 15px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
-                    Text { text: "Add entry"; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
+                    Text { text: I18n.add-entry; font-size: 14px + Palette.font-offset; color: Palette.text3; vertical-alignment: center; }
                 }
             }
         }
@@ -320,7 +322,7 @@ export component MonthView inherits Rectangle {
                     border-color: show-register ? Palette.teal : Palette.card-border;
                     background: show-register ? Palette.teal.with-alpha(0.15) : transparent;
                     TouchArea { clicked => { show-register = !show-register; } }
-                    Text { text: "📋 Register"; font-size: 14px + Palette.font-offset; font-weight: 600;
+                    Text { text: I18n.reg-title; font-size: 14px + Palette.font-offset; font-weight: 600;
                         color: show-register ? Palette.teal : Palette.text3;
                         horizontal-alignment: center; vertical-alignment: center; }
                 }
@@ -347,7 +349,7 @@ export component MonthView inherits Rectangle {
                 // Bar chart
                 Rectangle { border-radius: 12px; background: Palette.card; border-width: 1px; border-color: Palette.card-border; height: 200px;
                     VerticalLayout { padding: 14px; spacing: 6px;
-                        Text { text: "BUDGET VS PAID"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; letter-spacing: 1px; }
+                        Text { text: I18n.chart-budget-vs; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; letter-spacing: 1px; }
                         HorizontalLayout { spacing: 4px; alignment: space-around;
                             BarCol { label: "Withdrawals"; val-str: sum-withdrawals; budget-pct: chart-max > 0.0 ? chart-ret-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-ret-paid / chart-max : 0.0; bar-color: Palette.teal; }
                             BarCol { label: "Fixed"; val-str: sum-topay-b; budget-pct: chart-max > 0.0 ? chart-fix-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-fix-paid / chart-max : 0.0; bar-color: Palette.gold; }
@@ -357,7 +359,7 @@ export component MonthView inherits Rectangle {
                 }
 
                 // Sections
-                Section { title: "Income"; icon: "💰"; accent: Palette.green; total-str: sum-income; currency: currency; open: sections-open[0]; lines: sec0-lines; sec-idx: 0; expanded-lines: sec0-expanded; all-payments: sec0-payments;
+                Section { title: I18n.sec-income; icon: "💰"; accent: Palette.green; total-str: sum-income; currency: currency; open: sections-open[0]; lines: sec0-lines; sec-idx: 0; expanded-lines: sec0-expanded; all-payments: sec0-payments;
                     toggle-section(i) => { root.toggle-section(i); } toggle-line(s,l) => { root.toggle-line(s,l); }
                     update-banque(s,l,v) => { root.update-banque(s,l,v); } update-cash(s,l,v) => { root.update-cash(s,l,v); }
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
@@ -365,7 +367,7 @@ export component MonthView inherits Rectangle {
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
-                Section { title: "Withdrawals"; icon: "🏧"; accent: Palette.amber; total-str: sum-withdrawals; currency: currency; open: sections-open[1]; lines: sec1-lines; sec-idx: 1; expanded-lines: sec1-expanded; all-payments: sec1-payments;
+                Section { title: I18n.sec-withdrawals; icon: "🏧"; accent: Palette.amber; total-str: sum-withdrawals; currency: currency; open: sections-open[1]; lines: sec1-lines; sec-idx: 1; expanded-lines: sec1-expanded; all-payments: sec1-payments;
                     toggle-section(i) => { root.toggle-section(i); } toggle-line(s,l) => { root.toggle-line(s,l); }
                     update-banque(s,l,v) => { root.update-banque(s,l,v); } update-cash(s,l,v) => { root.update-cash(s,l,v); }
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
@@ -373,7 +375,7 @@ export component MonthView inherits Rectangle {
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
-                Section { title: "Fixed"; icon: "📋"; accent: Palette.blue; total-str: sum-topay-b; currency: currency; open: sections-open[2]; lines: sec2-lines; sec-idx: 2; expanded-lines: sec2-expanded; all-payments: sec2-payments;
+                Section { title: I18n.sec-fixed; icon: "📋"; accent: Palette.blue; total-str: sum-topay-b; currency: currency; open: sections-open[2]; lines: sec2-lines; sec-idx: 2; expanded-lines: sec2-expanded; all-payments: sec2-payments;
                     toggle-section(i) => { root.toggle-section(i); } toggle-line(s,l) => { root.toggle-line(s,l); }
                     update-banque(s,l,v) => { root.update-banque(s,l,v); } update-cash(s,l,v) => { root.update-cash(s,l,v); }
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
@@ -381,7 +383,7 @@ export component MonthView inherits Rectangle {
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
-                Section { title: "Variable"; icon: "🛒"; accent: Palette.gold; total-str: sum-topay-c; currency: currency; open: sections-open[3]; lines: sec3-lines; sec-idx: 3; expanded-lines: sec3-expanded; all-payments: sec3-payments;
+                Section { title: I18n.sec-variable; icon: "🛒"; accent: Palette.gold; total-str: sum-topay-c; currency: currency; open: sections-open[3]; lines: sec3-lines; sec-idx: 3; expanded-lines: sec3-expanded; all-payments: sec3-payments;
                     toggle-section(i) => { root.toggle-section(i); } toggle-line(s,l) => { root.toggle-line(s,l); }
                     update-banque(s,l,v) => { root.update-banque(s,l,v); } update-cash(s,l,v) => { root.update-cash(s,l,v); }
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
@@ -396,20 +398,20 @@ export component MonthView inherits Rectangle {
                 border-radius: 12px; background: Palette.card; border-width: 1px; border-color: Palette.card-border;
                 VerticalLayout { padding: 12px; spacing: 4px;
                     HorizontalLayout { spacing: 8px; height: 28px;
-                        Text { text: "📋 Register"; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
+                        Text { text: I18n.reg-title; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; horizontal-stretch: 1; vertical-alignment: center; }
                         Rectangle { width: 100px; height: 26px; border-radius: 6px; border-width: 1px; border-color: Palette.card-border;
                             TouchArea { clicked => { root.toggle-register-sort(); } }
-                            Text { text: register-asc ? "↑ Date asc" : "↓ Date desc"; font-size: 14px + Palette.font-offset; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
+                            Text { text: register-asc ? I18n.reg-date-asc : I18n.reg-date-desc; font-size: 14px + Palette.font-offset; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
                         }
                     }
                     Rectangle { height: 1px; background: Palette.card-border; }
                     HorizontalLayout { spacing: 6px; padding-left: 8px; padding-right: 8px; height: 22px;
-                        Text { text: "Date"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 80px; }
-                        Text { text: "Label"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; }
-                        Text { text: "Section"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 60px; }
-                        Text { text: "Amount"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 80px; horizontal-alignment: right; }
+                        Text { text: I18n.pay-date; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 80px; }
+                        Text { text: I18n.reg-label; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; }
+                        Text { text: I18n.reg-section; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 60px; }
+                        Text { text: I18n.pay-amount; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; width: 80px; horizontal-alignment: right; }
                     }
-                    if register-entries.length == 0 : Text { text: "No payments recorded"; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center; height: 28px; }
+                    if register-entries.length == 0 : Text { text: I18n.reg-no-payments; font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center; height: 28px; }
                     for entry in register-entries : RegisterRow { date: entry.date; label: entry.label; section: entry.section; amount: entry.amount; currency: currency; }
                 }
             }
@@ -433,7 +435,7 @@ export component MonthView inherits Rectangle {
 
             VerticalLayout { padding: 12px; spacing: 2px;
                 Text { text: "↻ Recurrence  " + rec-popup-name; font-size: 16px + Palette.font-offset; font-weight: 700; color: Palette.text; }
-                Text { text: "Repeat frequency"; font-size: 14px + Palette.font-offset; color: Palette.text2; }
+                Text { text: I18n.rec-frequency; font-size: 14px + Palette.font-offset; color: Palette.text2; }
 
                 // Option 1: Every month
                 Rectangle { height: 26px; background: transparent;
@@ -443,7 +445,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 1 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 1 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Every month"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
+                        Text { text: I18n.rec-every-1; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
                 // Option 2
@@ -454,7 +456,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 2 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 2 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Every 2 months"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
+                        Text { text: I18n.rec-every-2; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
                 // Option 3
@@ -465,7 +467,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 3 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 3 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Every 3 months"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
+                        Text { text: I18n.rec-every-3; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
                 // Option 6
@@ -476,7 +478,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 6 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 6 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Every 6 months"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
+                        Text { text: I18n.rec-every-6; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
                 // Option 12
@@ -487,7 +489,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-freq == 12 ? Palette.teal : Palette.text3;
                             if rec-popup-freq == 12 : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
                         }
-                        Text { text: "Annual"; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
+                        Text { text: I18n.rec-every-12; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
                     }
                 }
 
@@ -499,7 +501,7 @@ export component MonthView inherits Rectangle {
                             border-color: rec-popup-past ? Palette.teal : Palette.text3;
                             if rec-popup-past : Text { text: "✓"; font-size: 14px + Palette.font-offset; color: Palette.teal; horizontal-alignment: center; vertical-alignment: center; }
                         }
-                        Text { text: "Also apply to past months"; font-size: 14px + Palette.font-offset; color: Palette.text2; vertical-alignment: center; }
+                        Text { text: I18n.rec-past; font-size: 14px + Palette.font-offset; color: Palette.text2; vertical-alignment: center; }
                     }
                 }
 
@@ -508,17 +510,17 @@ export component MonthView inherits Rectangle {
                     // Cancel
                     Rectangle { horizontal-stretch: 1; height: 36px; border-radius: 8px;
                         TouchArea { clicked => { rec-popup-open = false; } }
-                        Text { text: "Cancel"; font-size: 14px + Palette.font-offset; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
+                        Text { text: I18n.rec-cancel; font-size: 14px + Palette.font-offset; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
                     }
                     // Disable
                     Rectangle { horizontal-stretch: 1; height: 36px; border-radius: 8px;
                         TouchArea { clicked => { root.set-recurring(rec-popup-sec, rec-popup-line, 0, rec-popup-past); rec-popup-open = false; } }
-                        Text { text: "Disable"; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+                        Text { text: I18n.rec-disable; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
                     }
                     // Apply
                     Rectangle { horizontal-stretch: 1; height: 36px; border-radius: 8px; background: Palette.teal;
                         TouchArea { clicked => { root.set-recurring(rec-popup-sec, rec-popup-line, rec-popup-freq, rec-popup-past); rec-popup-open = false; } }
-                        Text { text: "Apply"; font-size: 14px + Palette.font-offset; font-weight: 600; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
+                        Text { text: I18n.rec-apply; font-size: 14px + Palette.font-offset; font-weight: 600; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
                     }
                 }
             }

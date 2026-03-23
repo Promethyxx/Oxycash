@@ -3,6 +3,8 @@
 // Annual expenses table: Fixed / Occasional / Withdrawals
 
 import { Palette } from "palette.slint";
+import { I18n } from "i18n.slint";
+import { I18n } from "i18n.slint";
 
 export struct ExpenseLine {
     name:   string,
@@ -73,7 +75,7 @@ component ExpenseTable inherits Rectangle {
             spacing: 2px;
             height: 20px;
 
-            Text { text: "Name"; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 72px; }
+            Text { text: I18n.exp-name; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 72px; }
             Text { text: "J";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
             Text { text: "F";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
             Text { text: "M";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
@@ -86,7 +88,7 @@ component ExpenseTable inherits Rectangle {
             Text { text: "O";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
             Text { text: "N";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
             Text { text: "D";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "Total"; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 52px; horizontal-alignment: right; }
+            Text { text: I18n.exp-total; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 52px; horizontal-alignment: right; }
         }
 
         for line in section.lines : HorizontalLayout {
@@ -125,7 +127,7 @@ export component ExpensesView inherits Flickable {
         spacing: 12px;
 
         Text {
-            text: "Expenses";
+            text: I18n.exp-title;
             font-size: 22px + Palette.font-offset;
             font-weight: 700;
             color: Palette.text;

@@ -1,7 +1,11 @@
 // oxycash-rs - ui/main.slint
 
 import { Palette }      from "palette.slint";
+import { I18n }         from "i18n.slint";
 export { Palette }
+export { I18n }
+import { I18n }         from "i18n.slint";
+import { I18n }         from "i18n.slint";
 import { MonthView, LineItem, PaymentItem, RegisterEntry } from "month_view.slint";
 import { SettingsView, ProfileItem } from "settings.slint";
 import { ChartsView }   from "charts_view.slint";
@@ -335,25 +339,25 @@ export component AppWindow inherits Window {
                         spacing: 4px;
                         alignment: start;
 
-                        TabButton { label: "January"; active: current-tab == Tab.JAN; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JAN); } }
-                        TabButton { label: "February"; active: current-tab == Tab.FEB; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.FEB); } }
-                        TabButton { label: "March"; active: current-tab == Tab.MAR; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.MAR); } }
-                        TabButton { label: "April"; active: current-tab == Tab.APR; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.APR); } }
-                        TabButton { label: "May"; active: current-tab == Tab.MAI; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.MAI); } }
-                        TabButton { label: "June"; active: current-tab == Tab.JUN; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JUN); } }
-                        TabButton { label: "July"; active: current-tab == Tab.JUL; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JUL); } }
-                        TabButton { label: "August"; active: current-tab == Tab.AUG; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.AUG); } }
-                        TabButton { label: "September"; active: current-tab == Tab.SEP; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.SEP); } }
-                        TabButton { label: "October"; active: current-tab == Tab.OCT; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.OCT); } }
-                        TabButton { label: "November"; active: current-tab == Tab.NOV; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.NOV); } }
-                        TabButton { label: "December"; active: current-tab == Tab.DEC; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.DEC); } }
+                        TabButton { label: I18n.jan; active: current-tab == Tab.JAN; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JAN); } }
+                        TabButton { label: I18n.feb; active: current-tab == Tab.FEB; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.FEB); } }
+                        TabButton { label: I18n.mar; active: current-tab == Tab.MAR; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.MAR); } }
+                        TabButton { label: I18n.apr; active: current-tab == Tab.APR; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.APR); } }
+                        TabButton { label: I18n.mai; active: current-tab == Tab.MAI; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.MAI); } }
+                        TabButton { label: I18n.jun; active: current-tab == Tab.JUN; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JUN); } }
+                        TabButton { label: I18n.jul; active: current-tab == Tab.JUL; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.JUL); } }
+                        TabButton { label: I18n.aug; active: current-tab == Tab.AUG; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.AUG); } }
+                        TabButton { label: I18n.sep; active: current-tab == Tab.SEP; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.SEP); } }
+                        TabButton { label: I18n.oct; active: current-tab == Tab.OCT; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.OCT); } }
+                        TabButton { label: I18n.nov; active: current-tab == Tab.NOV; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.NOV); } }
+                        TabButton { label: I18n.dec; active: current-tab == Tab.DEC; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.DEC); } }
 
-                        TabButton { label: "Debts";     active: current-tab == Tab.Debts;     special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Debts); } }
-                        TabButton { label: "Savings";   active: current-tab == Tab.Savings;   special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Savings); } }
-                        TabButton { label: "Expenses";  active: current-tab == Tab.Expenses;  special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Expenses); } }
-                        TabButton { label: "Viability"; active: current-tab == Tab.Viability; special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Viability); } }
-                        TabButton { label: "Charts";    active: current-tab == Tab.Charts;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Charts); } }
-                        TabButton { label: "Config";    active: current-tab == Tab.Config;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Config); } }
+                        TabButton { label: I18n.tab-debts;     active: current-tab == Tab.Debts;     special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Debts); } }
+                        TabButton { label: I18n.tab-savings;   active: current-tab == Tab.Savings;   special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Savings); } }
+                        TabButton { label: I18n.tab-expenses;  active: current-tab == Tab.Expenses;  special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Expenses); } }
+                        TabButton { label: I18n.tab-viability; active: current-tab == Tab.Viability; special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Viability); } }
+                        TabButton { label: I18n.tab-charts;    active: current-tab == Tab.Charts;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Charts); } }
+                        TabButton { label: I18n.tab-config;    active: current-tab == Tab.Config;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Config); } }
                     }
                 }
             }
