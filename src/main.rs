@@ -250,7 +250,12 @@ fn push_month(window: &AppWindow, state: &AppState) {
     window.set_chart_var_paid(var_paid as f32);
     window.set_chart_max(chart_max as f32);
 
-    window.set_month_name(m.name.clone().into());
+    // Translate month name
+    let month_keys = ["jan","feb","mar","apr","mai","jun","jul","aug","sep","oct","nov","dec"];
+    let mi = model::MONTHS.iter().position(|&x| x == state.current_month.as_str()).unwrap_or(0);
+    let tr = i18n::get_translations(&state.storage.cfg.lang);
+    let translated_month = tr.get(month_keys[mi]).copied().unwrap_or(&state.current_month);
+    window.set_month_name(translated_month.into());
 
     // Sections open state
     window.set_sections_open(make_bool_model(&state.sections_open));
@@ -507,9 +512,11 @@ fn make_expense_section(label: &str, lines: &[FraisLine]) -> ExpenseSection {
 
 fn push_expenses(window: &AppWindow, state: &AppState) {
     let frais = &state.storage.data.frais;
-    window.set_expenses_fixed(make_expense_section("Fixed", &frais.fixes));
-    window.set_expenses_occasional(make_expense_section("Occasional", &frais.ponctuels));
-    window.set_expenses_withdrawals(make_expense_section("Withdrawals", &frais.retraits));
+    let tr = i18n::get_translations(&state.storage.cfg.lang);
+    let l = |k: &str| -> String { tr.get(k).copied().unwrap_or(k).to_string() };
+    window.set_expenses_fixed(make_expense_section(&l("sec_fixed"), &frais.fixes));
+    window.set_expenses_occasional(make_expense_section(&l("sec_variable"), &frais.ponctuels));
+    window.set_expenses_withdrawals(make_expense_section(&l("sec_withdrawals"), &frais.retraits));
 }
 
 // --- Push viability data to window

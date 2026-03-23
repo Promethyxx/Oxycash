@@ -91,11 +91,11 @@ fn fr() -> HashMap<&'static str, &'static str> {
     m.insert("col_bank","Banque"); m.insert("col_cash","Cash"); m.insert("col_total","Total");
     m.insert("col_to_withdraw","À retirer"); m.insert("col_withdrawn","Retiré");
     m.insert("sec_income","Revenus"); m.insert("sec_withdrawals","Retraits");
-    m.insert("sec_fixed","Frais fixes"); m.insert("sec_variable","Ponctuels");
+    m.insert("sec_fixed","Frais fixes"); m.insert("sec_variable","Frais ponctuels");
     m.insert("col_bank_hdr","BANQUE"); m.insert("col_cash_hdr","CASH");
     m.insert("col_paid","PAYÉ"); m.insert("col_left","SOLDE");
     m.insert("chart_budget_vs","BUDGET VS PAYÉ"); m.insert("chart_withdrawals","Retraits");
-    m.insert("chart_fixed","Frais fixes"); m.insert("chart_variable","Ponctuels");
+    m.insert("chart_fixed","Frais fixes"); m.insert("chart_variable","Frais ponctuels");
     m.insert("reg_title","Registre"); m.insert("reg_date_asc","↑ Date croissante"); m.insert("reg_date_desc","↓ Date décroissante");
     m.insert("reg_date","Date"); m.insert("reg_label","Libellé"); m.insert("reg_section","Section");
     m.insert("reg_amount","Montant"); m.insert("reg_no_payments","Aucun paiement enregistré");

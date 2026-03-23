@@ -162,7 +162,7 @@ export component SettingsView inherits Flickable {
 
         // ── Profiles ─────────────────────────
         Card {
-            title: "Profiles";
+            title: I18n.cfg-profiles;
 
             for prof in profiles : Rectangle {
                 height: 38px;
@@ -202,7 +202,7 @@ export component SettingsView inherits Flickable {
                         border-color: prof.active ? Palette.teal : Palette.card-border;
                         TouchArea { clicked => { root.switch-profile(prof.idx); } }
                         Text {
-                            text: prof.active ? "✓" : "Use";
+                            text: prof.active ? "✓" : I18n.cfg-use;
                             font-size: 14px + Palette.font-offset;
                             color: prof.active ? Palette.teal : Palette.text2;
                             horizontal-alignment: center;
@@ -245,7 +245,7 @@ export component SettingsView inherits Flickable {
                 }
 
                 ActionBtn {
-                    label: "+ Add";
+                    label: I18n.cfg-add-profile;
                     bg-color: Palette.teal;
                     text-color: #1a1a1a;
                     clicked => {
@@ -258,7 +258,7 @@ export component SettingsView inherits Flickable {
 
         // ── Currency ─────────────────────────
         Card {
-            title: "Currency";
+            title: I18n.cfg-currency;
 
             HorizontalLayout {
                 spacing: 8px;
@@ -279,7 +279,7 @@ export component SettingsView inherits Flickable {
                 }
 
                 ActionBtn {
-                    label: "Save";
+                    label: I18n.cfg-save;
                     bg-color: Palette.gold;
                     text-color: #1a1a1a;
                     clicked => { root.save-currency(); }
@@ -289,7 +289,7 @@ export component SettingsView inherits Flickable {
 
         // ── Theme ────────────────────────────
         Card {
-            title: "Theme";
+            title: I18n.cfg-theme;
 
             Rectangle {
                 height: 40px;
@@ -320,7 +320,7 @@ export component SettingsView inherits Flickable {
 
         // ── WebDAV ───────────────────────────
         Card {
-            title: "WebDAV (Nextcloud, kDrive…)";
+            title: I18n.cfg-webdav;
 
             InputField { label-text: I18n.cfg-url; value <=> root.dav-url; }
             InputField { label-text: I18n.cfg-user;   value <=> root.dav-user; }
@@ -330,9 +330,9 @@ export component SettingsView inherits Flickable {
                 spacing: 8px;
                 height: 36px;
 
-                ActionBtn { label: "Save";  bg-color: Palette.gold; text-color: #1a1a1a; clicked => { root.save-dav(); } }
+                ActionBtn { label: I18n.cfg-save;  bg-color: Palette.gold; text-color: #1a1a1a; clicked => { root.save-dav(); } }
                 ActionBtn { label: "Test";  bg-color: Palette.teal; text-color: #1a1a1a; clicked => { root.test-dav(); } }
-                ActionBtn { label: "Clear"; bg-color: Palette.card; text-color: Palette.text2; clicked => { root.clear-dav(); } }
+                ActionBtn { label: I18n.cfg-clear; bg-color: Palette.card; text-color: Palette.text2; clicked => { root.clear-dav(); } }
             }
 
             if dav-status != "" : Text {
@@ -344,17 +344,17 @@ export component SettingsView inherits Flickable {
 
         // ── Export ────────────────────────────
         Card {
-            title: "Export";
+            title: I18n.cfg-export;
 
             ActionBtn {
-                label: "Export JSON";
+                label: I18n.cfg-export-btn;
                 bg-color: Palette.card;
                 text-color: Palette.text;
                 clicked => { root.do-export(); }
             }
 
             Text {
-                text: "Saved to user folder";
+                text: I18n.cfg-export-btn;
                 font-size: 14px + Palette.font-offset;
                 color: Palette.text3;
             }
@@ -362,16 +362,16 @@ export component SettingsView inherits Flickable {
 
         // ── Import ───────────────────────────
         Card {
-            title: "Import";
+            title: I18n.cfg-import;
 
             Text {
-                text: "Import from file";
+                text: I18n.cfg-import-btn;
                 font-size: 14px + Palette.font-offset;
                 color: Palette.text3;
             }
 
             ActionBtn {
-                label: "Import JSON";
+                label: I18n.cfg-import-btn;
                 bg-color: Palette.teal;
                 text-color: #1a1a1a;
                 clicked => { root.do-import(); }
@@ -380,10 +380,10 @@ export component SettingsView inherits Flickable {
 
         // ── Reset ────────────────────────────
         Card {
-            title: "Data";
+            title: I18n.cfg-data;
 
             ActionBtn {
-                label: "Reset all data";
+                label: I18n.cfg-reset;
                 danger: true;
                 clicked => { root.do-reset(); }
             }

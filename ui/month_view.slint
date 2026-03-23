@@ -332,18 +332,18 @@ export component MonthView inherits Rectangle {
             if !show-register : VerticalLayout { spacing: 8px;
                 // Cards row 1
                 HorizontalLayout { spacing: 8px;
-                    SummaryCard { width: (root.width - 40px) / 2; label: "INCOME"; row1-val: sum-income-b; row2-val: sum-income-c; total: sum-income; total-color: sum-income-col; }
-                    SummaryCard { width: (root.width - 40px) / 2; label: "WITHDRAWALS"; row1-label: "To withdraw"; row1-val: sum-withdrawals; row2-label: "Withdrawn"; row2-val: "0"; total: sum-withdrawals; total-color: Palette.text; }
+                    SummaryCard { width: (root.width - 40px) / 2; label: I18n.card-income; row1-label: I18n.col-bank; row2-label: I18n.col-cash; row1-val: sum-income-b; row2-val: sum-income-c; total: sum-income; total-color: sum-income-col; }
+                    SummaryCard { width: (root.width - 40px) / 2; label: I18n.card-withdrawals; row1-label: I18n.col-to-withdraw; row1-val: sum-withdrawals; row2-label: I18n.col-withdrawn; row2-val: "0"; total: sum-withdrawals; total-color: Palette.text; }
                 }
                 // Cards row 2
                 HorizontalLayout { spacing: 8px;
-                    SummaryCard { width: (root.width - 40px) / 2; label: "PAID"; row1-val: sum-paid-b; row2-val: sum-paid-c; total: sum-paid; total-color: Palette.teal; }
-                    SummaryCard { width: (root.width - 40px) / 2; label: "TO PAY"; row1-val: sum-topay-b; row2-val: sum-topay-c; total: sum-topay; total-color: Palette.amber; }
+                    SummaryCard { width: (root.width - 40px) / 2; label: I18n.card-paid; row1-label: I18n.col-bank; row2-label: I18n.col-cash; row1-val: sum-paid-b; row2-val: sum-paid-c; total: sum-paid; total-color: Palette.teal; }
+                    SummaryCard { width: (root.width - 40px) / 2; label: I18n.card-to-pay; row1-label: I18n.col-bank; row2-label: I18n.col-cash; row1-val: sum-topay-b; row2-val: sum-topay-c; total: sum-topay; total-color: Palette.amber; }
                 }
                 // Cards row 3
                 HorizontalLayout { spacing: 8px;
-                    SummaryCard { width: (root.width - 40px) / 2; label: "FORECAST"; row1-val: sum-forecast-b; row2-val: sum-forecast-c; total: sum-forecast; total-color: sum-forecast-col; big: true; }
-                    SummaryCard { width: (root.width - 40px) / 2; label: "BALANCE"; row1-val: sum-balance-b; row2-val: sum-balance-c; total: sum-balance; total-color: sum-balance-col; big: true; }
+                    SummaryCard { width: (root.width - 40px) / 2; label: I18n.card-forecast; row1-label: I18n.col-bank; row2-label: I18n.col-cash; row1-val: sum-forecast-b; row2-val: sum-forecast-c; total: sum-forecast; total-color: sum-forecast-col; big: true; }
+                    SummaryCard { width: (root.width - 40px) / 2; label: I18n.card-balance; row1-label: I18n.col-bank; row2-label: I18n.col-cash; row1-val: sum-balance-b; row2-val: sum-balance-c; total: sum-balance; total-color: sum-balance-col; big: true; }
                 }
 
                 // Bar chart
@@ -351,9 +351,9 @@ export component MonthView inherits Rectangle {
                     VerticalLayout { padding: 14px; spacing: 6px;
                         Text { text: I18n.chart-budget-vs; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; letter-spacing: 1px; }
                         HorizontalLayout { spacing: 4px; alignment: space-around;
-                            BarCol { label: "Withdrawals"; val-str: sum-withdrawals; budget-pct: chart-max > 0.0 ? chart-ret-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-ret-paid / chart-max : 0.0; bar-color: Palette.teal; }
-                            BarCol { label: "Fixed"; val-str: sum-topay-b; budget-pct: chart-max > 0.0 ? chart-fix-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-fix-paid / chart-max : 0.0; bar-color: Palette.gold; }
-                            BarCol { label: "Variable"; val-str: sum-topay-c; budget-pct: chart-max > 0.0 ? chart-var-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-var-paid / chart-max : 0.0; bar-color: Palette.danger; }
+                            BarCol { label: I18n.chart-withdrawals; val-str: sum-withdrawals; budget-pct: chart-max > 0.0 ? chart-ret-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-ret-paid / chart-max : 0.0; bar-color: Palette.teal; }
+                            BarCol { label: I18n.chart-fixed; val-str: sum-topay-b; budget-pct: chart-max > 0.0 ? chart-fix-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-fix-paid / chart-max : 0.0; bar-color: Palette.gold; }
+                            BarCol { label: I18n.chart-variable; val-str: sum-topay-c; budget-pct: chart-max > 0.0 ? chart-var-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-var-paid / chart-max : 0.0; bar-color: Palette.danger; }
                         }
                     }
                 }

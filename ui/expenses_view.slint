@@ -116,9 +116,9 @@ component ExpenseTable inherits Rectangle {
 export component ExpensesView inherits Flickable {
     viewport-width: self.width;
     in property <string>         currency:   "CHF";
-    in property <ExpenseSection> fixed:      { label: "Fixed",      lines: [], total: 0.0 };
-    in property <ExpenseSection> occasional: { label: "Occasional", lines: [], total: 0.0 };
-    in property <ExpenseSection> withdrawals:{ label: "Withdrawals",lines: [], total: 0.0 };
+    in property <ExpenseSection> fixed:      { label: "",      lines: [], total: 0.0 };
+    in property <ExpenseSection> occasional: { label: "", lines: [], total: 0.0 };
+    in property <ExpenseSection> withdrawals:{ label: "",lines: [], total: 0.0 };
 
     viewport-height: 900px;
 
