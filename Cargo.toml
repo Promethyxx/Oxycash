@@ -1,6 +1,6 @@
 [package]
 name = "Oxycash"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [[bin]]
@@ -29,7 +29,7 @@ slint = { version = "1.15", features = ["backend-winit", "renderer-femtovg"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 slint            = { version = "1.15", features = ["backend-android-activity-06", "renderer-skia"] }
-android-activity = { version = "0.6", features = ["native-activity"] }
+android-activity = { version = "0.6.1", features = ["native-activity"] }
 
 [build-dependencies]
 slint-build = "1.15"
@@ -40,7 +40,7 @@ winresource = "0.1"
 [package.metadata.android]
 package            = "io.github.promethyxx.oxycash"
 label              = "Oxycash"
-icon               = "@mipmap/oxycash_icon"
+icon               = "@mipmap/ic_launcher"
 resources          = "res"
 min_sdk_version    = 31
 target_sdk_version = 36

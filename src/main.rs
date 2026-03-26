@@ -233,18 +233,24 @@ fn push_month(window: &AppWindow, state: &AppState) {
     window.set_sum_balance_c(fmt(s.balance_c).into());
     window.set_sum_balance_col(color_for(s.balance));
 
-    // Withdrawals
-    let ret_a_retirer = m.retraits.iter().map(|l| l.banque).sum::<f64>();
-    window.set_sum_withdrawals(fmt(ret_a_retirer).into());
+    // Per-section totals (budget = banque+cash, paid, remaining)
+    let income_total = m.revenus.iter().map(|l| l.banque + l.cash).sum::<f64>();
+    let ret_total    = m.retraits.iter().map(|l| l.banque).sum::<f64>();
+    let fix_budget   = m.fixes.iter().map(|l| l.banque + l.cash).sum::<f64>();
+    let var_budget   = m.variables.iter().map(|l| l.banque + l.cash).sum::<f64>();
+    let fix_paid     = m.fixes.iter().map(|l| l.payments.iter().map(|p| p.amount).sum::<f64>()).sum::<f64>();
+    let var_paid     = m.variables.iter().map(|l| l.payments.iter().map(|p| p.amount).sum::<f64>()).sum::<f64>();
+    let ret_paid     = m.retraits.iter().map(|l| l.payments.iter().map(|p| p.amount).sum::<f64>()).sum::<f64>();
+
+    window.set_sum_sec_income(fmt(income_total).into());
+    window.set_sum_sec_withdrawals(fmt(ret_total).into());
+    window.set_sum_withdrawals(fmt(ret_total).into());
+    window.set_sum_sec_fixed(fmt(fix_budget).into());
+    window.set_sum_sec_variable(fmt(var_budget).into());
 
     // Bar chart data
-    let fix_budget = m.fixes.iter().map(|l| l.banque + l.cash).sum::<f64>();
-    let var_budget = m.variables.iter().map(|l| l.banque + l.cash).sum::<f64>();
-    let fix_paid   = m.fixes.iter().map(|l| l.payments.iter().map(|p| p.amount).sum::<f64>()).sum::<f64>();
-    let var_paid   = m.variables.iter().map(|l| l.payments.iter().map(|p| p.amount).sum::<f64>()).sum::<f64>();
-    let ret_paid   = m.retraits.iter().map(|l| l.payments.iter().map(|p| p.amount).sum::<f64>()).sum::<f64>();
-    let chart_max  = [ret_a_retirer, fix_budget, var_budget].iter().cloned().fold(1.0_f64, f64::max);
-    window.set_chart_ret_budget(ret_a_retirer as f32);
+    let chart_max = [ret_total, fix_budget, var_budget].iter().cloned().fold(1.0_f64, f64::max);
+    window.set_chart_ret_budget(ret_total as f32);
     window.set_chart_ret_paid(ret_paid as f32);
     window.set_chart_fix_budget(fix_budget as f32);
     window.set_chart_fix_paid(fix_paid as f32);

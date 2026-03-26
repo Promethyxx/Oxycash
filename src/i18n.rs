@@ -27,7 +27,7 @@ fn en() -> HashMap<&'static str, &'static str> {
     m.insert("col_bank_hdr","BANK"); m.insert("col_cash_hdr","CASH");
     m.insert("col_paid","PAID"); m.insert("col_left","LEFT");
     // Chart
-    m.insert("chart_budget_vs","BUDGET VS PAID"); m.insert("chart_withdrawals","Withdrawals");
+    m.insert("chart_budget_vs","PAYMENTS"); m.insert("chart_withdrawals","Withdrawals");
     m.insert("chart_fixed","Fixed"); m.insert("chart_variable","Variable");
     // Register
     m.insert("reg_title","Register"); m.insert("reg_date_asc","↑ Date asc"); m.insert("reg_date_desc","↓ Date desc");
@@ -94,7 +94,7 @@ fn fr() -> HashMap<&'static str, &'static str> {
     m.insert("sec_fixed","Frais fixes"); m.insert("sec_variable","Frais ponctuels");
     m.insert("col_bank_hdr","BANQUE"); m.insert("col_cash_hdr","CASH");
     m.insert("col_paid","PAYÉ"); m.insert("col_left","SOLDE");
-    m.insert("chart_budget_vs","BUDGET VS PAYÉ"); m.insert("chart_withdrawals","Retraits");
+    m.insert("chart_budget_vs","PAIEMENTS"); m.insert("chart_withdrawals","Retraits");
     m.insert("chart_fixed","Frais fixes"); m.insert("chart_variable","Frais ponctuels");
     m.insert("reg_title","Registre"); m.insert("reg_date_asc","↑ Date croissante"); m.insert("reg_date_desc","↓ Date décroissante");
     m.insert("reg_date","Date"); m.insert("reg_label","Libellé"); m.insert("reg_section","Section");

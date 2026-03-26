@@ -275,6 +275,7 @@ export component MonthView inherits Rectangle {
     in property <string> sum-income: "0"; in property <string> sum-income-b: "0"; in property <string> sum-income-c: "0"; in property <color> sum-income-col: #7BC47F;
     in property <string> sum-paid: "0"; in property <string> sum-paid-b: "0"; in property <string> sum-paid-c: "0";
     in property <string> sum-topay: "0"; in property <string> sum-topay-b: "0"; in property <string> sum-topay-c: "0";
+    in property <string> sum-sec-income: "0"; in property <string> sum-sec-fixed: "0"; in property <string> sum-sec-variable: "0"; in property <string> sum-sec-withdrawals: "0";
     in property <string> sum-forecast: "0"; in property <string> sum-forecast-b: "0"; in property <string> sum-forecast-c: "0"; in property <color> sum-forecast-col: #7BC47F;
     in property <string> sum-balance: "0"; in property <string> sum-balance-b: "0"; in property <string> sum-balance-c: "0"; in property <color> sum-balance-col: #7BC47F;
     in property <string> sum-withdrawals: "0";
@@ -352,14 +353,14 @@ export component MonthView inherits Rectangle {
                         Text { text: I18n.chart-budget-vs; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; letter-spacing: 1px; }
                         HorizontalLayout { spacing: 4px; alignment: space-around;
                             BarCol { label: I18n.chart-withdrawals; val-str: sum-withdrawals; budget-pct: chart-max > 0.0 ? chart-ret-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-ret-paid / chart-max : 0.0; bar-color: Palette.teal; }
-                            BarCol { label: I18n.chart-fixed; val-str: sum-topay-b; budget-pct: chart-max > 0.0 ? chart-fix-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-fix-paid / chart-max : 0.0; bar-color: Palette.gold; }
-                            BarCol { label: I18n.chart-variable; val-str: sum-topay-c; budget-pct: chart-max > 0.0 ? chart-var-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-var-paid / chart-max : 0.0; bar-color: Palette.danger; }
+                            BarCol { label: I18n.chart-fixed; val-str: sum-sec-fixed; budget-pct: chart-max > 0.0 ? chart-fix-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-fix-paid / chart-max : 0.0; bar-color: Palette.gold; }
+                            BarCol { label: I18n.chart-variable; val-str: sum-sec-variable; budget-pct: chart-max > 0.0 ? chart-var-budget / chart-max : 0.0; paid-pct: chart-max > 0.0 ? chart-var-paid / chart-max : 0.0; bar-color: Palette.danger; }
                         }
                     }
                 }
 
                 // Sections
-                Section { title: I18n.sec-income; icon: "💰"; accent: Palette.green; total-str: sum-income; currency: currency; open: sections-open[0]; lines: sec0-lines; sec-idx: 0; expanded-lines: sec0-expanded; all-payments: sec0-payments;
+                Section { title: I18n.sec-income; icon: "💰"; accent: Palette.green; total-str: sum-sec-income; currency: currency; open: sections-open[0]; lines: sec0-lines; sec-idx: 0; expanded-lines: sec0-expanded; all-payments: sec0-payments;
                     toggle-section(i) => { root.toggle-section(i); } toggle-line(s,l) => { root.toggle-line(s,l); }
                     update-banque(s,l,v) => { root.update-banque(s,l,v); } update-cash(s,l,v) => { root.update-cash(s,l,v); }
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
@@ -367,7 +368,7 @@ export component MonthView inherits Rectangle {
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
-                Section { title: I18n.sec-withdrawals; icon: "🏧"; accent: Palette.amber; total-str: sum-withdrawals; currency: currency; open: sections-open[1]; lines: sec1-lines; sec-idx: 1; expanded-lines: sec1-expanded; all-payments: sec1-payments;
+                Section { title: I18n.sec-withdrawals; icon: "🏧"; accent: Palette.amber; total-str: sum-sec-withdrawals; currency: currency; open: sections-open[1]; lines: sec1-lines; sec-idx: 1; expanded-lines: sec1-expanded; all-payments: sec1-payments;
                     toggle-section(i) => { root.toggle-section(i); } toggle-line(s,l) => { root.toggle-line(s,l); }
                     update-banque(s,l,v) => { root.update-banque(s,l,v); } update-cash(s,l,v) => { root.update-cash(s,l,v); }
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
@@ -375,7 +376,7 @@ export component MonthView inherits Rectangle {
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
-                Section { title: I18n.sec-fixed; icon: "📋"; accent: Palette.blue; total-str: sum-topay-b; currency: currency; open: sections-open[2]; lines: sec2-lines; sec-idx: 2; expanded-lines: sec2-expanded; all-payments: sec2-payments;
+                Section { title: I18n.sec-fixed; icon: "📋"; accent: Palette.blue; total-str: sum-sec-fixed; currency: currency; open: sections-open[2]; lines: sec2-lines; sec-idx: 2; expanded-lines: sec2-expanded; all-payments: sec2-payments;
                     toggle-section(i) => { root.toggle-section(i); } toggle-line(s,l) => { root.toggle-line(s,l); }
                     update-banque(s,l,v) => { root.update-banque(s,l,v); } update-cash(s,l,v) => { root.update-cash(s,l,v); }
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
@@ -383,7 +384,7 @@ export component MonthView inherits Rectangle {
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
-                Section { title: I18n.sec-variable; icon: "🛒"; accent: Palette.gold; total-str: sum-topay-c; currency: currency; open: sections-open[3]; lines: sec3-lines; sec-idx: 3; expanded-lines: sec3-expanded; all-payments: sec3-payments;
+                Section { title: I18n.sec-variable; icon: "🛒"; accent: Palette.gold; total-str: sum-sec-variable; currency: currency; open: sections-open[3]; lines: sec3-lines; sec-idx: 3; expanded-lines: sec3-expanded; all-payments: sec3-payments;
                     toggle-section(i) => { root.toggle-section(i); } toggle-line(s,l) => { root.toggle-line(s,l); }
                     update-banque(s,l,v) => { root.update-banque(s,l,v); } update-cash(s,l,v) => { root.update-cash(s,l,v); }
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
