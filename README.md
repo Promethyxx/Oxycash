@@ -3,3 +3,6 @@
    - Android
    - Linux
    - Windows
+# Roadmap
+You can find the roadmap at :
+https://github.com/Promethyxx/Roadmap
