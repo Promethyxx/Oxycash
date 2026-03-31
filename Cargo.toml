@@ -3,34 +3,40 @@ name = "Oxycash"
 version = "0.4.0"
 edition = "2024"
 
+[features]
+desktop = []
+
 [[bin]]
 name = "Oxycash"
 path = "src/main.rs"
+required-features = ["desktop"]
 
-# [lib]
-# crate-type = ["cdylib"]
-# name = "oxycash"
-# path = "src/main.rs"
+[lib]
+crate-type = ["cdylib"]
+name = "oxycash"
+path = "src/main.rs"
 
 [dependencies]
 base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
 dirs = "6"
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "blocking", "json"] }
+rustls = { version = "0.23", default-features = false, features = ["logging", "std", "tls12", "ring"] }
 serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 
-
+# --- Desktop (Windows + Linux) ---
 [target.'cfg(not(target_os = "android"))'.dependencies]
 rfd   = "0.17"
 slint = { version = "1.15", features = ["backend-winit", "renderer-femtovg"] }
 
-
+# --- Android ---
 [target.'cfg(target_os = "android")'.dependencies]
 slint            = { version = "1.15", features = ["backend-android-activity-06", "renderer-skia"] }
 android-activity = { version = "0.6.1", features = ["native-activity"] }
 
+# --- Build deps ---
 [build-dependencies]
 slint-build = "1.15"
 
@@ -39,14 +45,15 @@ winresource = "0.1"
 
 [package.metadata.android]
 package            = "io.github.promethyxx.oxycash"
-label              = "Oxycash"
-icon               = "@mipmap/ic_launcher"
 resources          = "res"
-min_sdk_version    = 31
+min_sdk_version    = 36
 target_sdk_version = 36
 
+[package.metadata.android.application]
+label              = "Oxycash"
+icon               = "@mipmap/ic_launcher"
 
-# --- Release profile
+# --- Release profile ---
 [profile.release]
 opt-level     = "z"
 lto           = true
