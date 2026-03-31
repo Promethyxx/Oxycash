@@ -7,10 +7,10 @@ edition = "2024"
 name = "Oxycash"
 path = "src/main.rs"
 
-[lib]
-crate-type = ["cdylib"]
-name = "oxycash"
-path = "src/main.rs"
+# [lib]
+# crate-type = ["cdylib"]
+# name = "oxycash"
+# path = "src/main.rs"
 
 [dependencies]
 base64 = "0.22"
