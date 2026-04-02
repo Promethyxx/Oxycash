@@ -105,22 +105,22 @@ export component ChartsView inherits Rectangle {
         // Row 1
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-income;      value: total-income;      value-color: income-color; }
-            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-paid;        value: total-paid;        value-color: paid-color; }
+            SummaryCard { horizontal-stretch: 1; label: I18n.charts-income;      value: total-income;      value-color: income-color; }
+            SummaryCard { horizontal-stretch: 1; label: I18n.charts-paid;        value: total-paid;        value-color: paid-color; }
         }
 
         // Row 2
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-to-pay;      value: total-to-pay;      value-color: to-pay-color; }
-            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-withdrawals; value: total-withdrawals; value-color: withdrawals-color; }
+            SummaryCard { horizontal-stretch: 1; label: I18n.charts-to-pay;      value: total-to-pay;      value-color: to-pay-color; }
+            SummaryCard { horizontal-stretch: 1; label: I18n.charts-withdrawals; value: total-withdrawals; value-color: withdrawals-color; }
         }
 
         // Row 3
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-forecast;    value: total-forecast;    value-color: forecast-color; }
-            SummaryCard { width: (root.width - 36px) / 2; label: I18n.charts-balance;     value: total-balance;     value-color: balance-color; }
+            SummaryCard { horizontal-stretch: 1; label: I18n.charts-forecast;    value: total-forecast;    value-color: forecast-color; }
+            SummaryCard { horizontal-stretch: 1; label: I18n.charts-balance;     value: total-balance;     value-color: balance-color; }
         }
 
         // Annual cumulative card

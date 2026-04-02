@@ -53,8 +53,8 @@ component BarCol inherits Rectangle {
         alignment: end; spacing: 3px;
         Text { text: val-str; font-size: 18px + Palette.font-offset; font-weight: 600; color: bar-color; horizontal-alignment: center; }
         HorizontalLayout { alignment: center; spacing: 4px; height: 80px;
-            Rectangle { width: 72px; height: clamp(2px, budget-pct * 80px, 80px); border-radius: 4px; background: bar-color.with-alpha(0.3); y: 80px - self.height; }
-            Rectangle { width: 72px; height: clamp(2px, paid-pct * 80px, 80px); border-radius: 4px; background: bar-color; y: 80px - self.height; }
+            Rectangle { width: 40px; height: clamp(2px, budget-pct * 80px, 80px); border-radius: 4px; background: bar-color.with-alpha(0.3); y: 80px - self.height; }
+            Rectangle { width: 40px; height: clamp(2px, paid-pct * 80px, 80px); border-radius: 4px; background: bar-color; y: 80px - self.height; }
         }
         Text { text: label; font-size: 18px + Palette.font-offset; color: Palette.text3; horizontal-alignment: center; }
     }
