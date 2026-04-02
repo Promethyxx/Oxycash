@@ -676,6 +676,9 @@ fn push_i18n(window: &AppWindow, lang: &str) {
 #[cfg(target_os = "android")]
 #[unsafe(no_mangle)]
 fn android_main(app: slint::android::AndroidApp) {
+    if let Some(path) = app.internal_data_path() {
+        storage::set_android_data_dir(path);
+    }
     slint::android::init(app).unwrap();
     run();
 }
@@ -1429,19 +1432,92 @@ fn run() {
         let state_ref = state.clone();
         let ww = window.as_weak();
         window.on_test_dav(move || {
+            let ww2 = ww.clone();
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
-            // Save first
             let url: String  = w.get_settings_dav_url().into();
             let user: String = w.get_settings_dav_user().into();
             let pass: String = w.get_settings_dav_pass().into();
             let slug = st.storage.cfg.active.clone();
             st.storage.save_profile_dav(&slug, &url, &user, &pass);
-            let (ok, msg) = st.storage.test_dav();
-            if ok { st.storage.dav_ok = true; }
-            w.set_settings_dav_status(msg.clone().into());
-            w.set_sync_status(status_str(st.storage.status()).into());
-            show_toast(&w, &msg);
+            let profile = st.storage.active_profile().clone();
+            drop(st);
+            w.set_settings_dav_status("1/4 init client…".into());
+
+            let state_ref2 = state_ref.clone();
+            let ww3 = ww2.clone();
+
+            macro_rules! step {
+                ($ww:expr, $msg:expr) => {{
+                    let ww_ = $ww.clone();
+                    let msg_ = $msg.to_string();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(w) = ww_.upgrade() { w.set_settings_dav_status(msg_.into()); }
+                    });
+                }};
+            }
+
+            std::thread::spawn(move || {
+                // 1. build client
+                let client = match storage::make_client() {
+                    Ok(c) => c,
+                    Err(e) => {
+                        step!(ww3, format!("1/4 FAIL client: {}", e));
+                        return;
+                    }
+                };
+                step!(ww3, "2/4 TCP 1.1.1.1…");
+
+                // 2. réseau basique sans DNS
+                if let Err(e) = std::net::TcpStream::connect_timeout(
+                    &"1.1.1.1:443".parse().unwrap(),
+                    std::time::Duration::from_secs(4),
+                ) {
+                    step!(ww3, format!("2/4 FAIL réseau: {}", e));
+                    return;
+                }
+                step!(ww3, "3/4 DNS…");
+
+                // 3. DNS
+                let host = {
+                    let url2 = profile.dav_url.trim().to_string();
+                    let s = url2.strip_prefix("https://").or_else(|| url2.strip_prefix("http://")).unwrap_or(&url2).to_string();
+                    s[..s.find('/').unwrap_or(s.len())].to_string()
+                };
+                let (tx2, rx2) = std::sync::mpsc::channel();
+                let host2 = host.clone();
+                std::thread::spawn(move || {
+                    let r = std::net::ToSocketAddrs::to_socket_addrs(&(host2.as_str(), 443u16))
+                        .map(|mut it| it.next().map(|a| a.ip().to_string()));
+                    let _ = tx2.send(r);
+                });
+                let ip = match rx2.recv_timeout(std::time::Duration::from_secs(6)) {
+                    Ok(Ok(Some(ip))) => ip,
+                    Ok(Ok(None))     => { step!(ww3, format!("3/4 FAIL DNS vide: {}", host)); return; }
+                    Ok(Err(e))       => { step!(ww3, format!("3/4 FAIL DNS: {}", e)); return; }
+                    Err(_)           => { step!(ww3, "3/4 FAIL DNS timeout 6s".to_string()); return; }
+                };
+                step!(ww3, format!("4/4 HTTPS {} → {}…", host, ip));
+
+                // 4. requête HTTPS
+                let (ok, msg) = storage::dav_test_http(&profile, client);
+                let msg2 = msg.clone();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(w) = ww3.upgrade() {
+                        w.set_settings_dav_status(format!("4/4 {}", msg2).into());
+                    }
+                });
+                let _ = slint::invoke_from_event_loop(move || {
+                    let mut st = state_ref2.lock().unwrap();
+                    if ok { st.storage.dav_ok = true; }
+                    let status = status_str(st.storage.status()).to_string();
+                    drop(st);
+                    if let Some(w) = ww2.upgrade() {
+                        w.set_sync_status(status.into());
+                        show_toast(&w, &msg);
+                    }
+                });
+            });
         });
     }
 

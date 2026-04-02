@@ -64,8 +64,19 @@ impl Default for Config {
 }
 
 // --- Paths
+#[cfg(target_os = "android")]
+static ANDROID_DATA_DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+
+#[cfg(target_os = "android")]
+pub fn set_android_data_dir(path: PathBuf) {
+    let _ = ANDROID_DATA_DIR.set(path);
+}
+
 fn local_dir() -> PathBuf {
-    // On Android, dirs::home_dir() returns the app internal storage
+    #[cfg(target_os = "android")]
+    if let Some(p) = ANDROID_DATA_DIR.get() {
+        return p.clone();
+    }
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join(".oxycash")
@@ -138,32 +149,55 @@ fn auth_header(user: &str, pw: &str) -> String {
     format!("Basic {}", STANDARD.encode(format!("{}:{}", user, pw)))
 }
 
-fn make_client() -> reqwest::blocking::Client {
-    reqwest::blocking::Client::builder()
+pub fn make_client() -> Result<reqwest::blocking::Client, String> {
+    let builder = reqwest::blocking::Client::builder()
         .user_agent(UA)
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .expect("reqwest client build failed")
+        .timeout(std::time::Duration::from_secs(10));
+
+    #[cfg(target_os = "android")]
+    let builder = {
+        let root_store = rustls::RootCertStore {
+            roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+        };
+        let tls = rustls::ClientConfig::builder_with_provider(
+            std::sync::Arc::new(rustls::crypto::aws_lc_rs::default_provider()),
+        )
+        .with_safe_default_protocol_versions()
+        .map_err(|e| format!("tls: {}", e))?
+        .with_root_certificates(root_store)
+        .with_no_client_auth();
+        builder.use_preconfigured_tls(tls)
+    };
+
+    builder.build().map_err(|e| format!("client build: {}", e))
 }
 
-pub fn dav_test(profile: &Profile) -> (bool, String) {
+pub fn dav_test_http(profile: &Profile, client: reqwest::blocking::Client) -> (bool, String) {
     let url = match dav_full_url(profile) {
         Some(u) => u,
-        None => return (false, "Connection failed".into()),
+        None => return (false, "url/user/pass manquant".into()),
     };
-    let client = make_client();
     let auth = auth_header(&profile.dav_user, &profile.dav_pass);
     match client.head(&url).header("Authorization", &auth).send() {
         Ok(r) if r.status().is_success() || r.status().as_u16() == 404 => {
-            (true, "Connected ✓".into())
+            (true, format!("Connecté ✓ (HTTP {})", r.status().as_u16()))
         }
-        _ => (false, "Connection failed".into()),
+        Ok(r) => (false, format!("HTTP {} — user/pass ou chemin?", r.status().as_u16())),
+        Err(e) => {
+            let mut msg = format!("ERR: {}", e);
+            let mut src: &dyn std::error::Error = &e;
+            while let Some(s) = src.source() {
+                msg.push_str(&format!(" | {}", s));
+                src = s;
+            }
+            (false, msg)
+        }
     }
 }
 
 fn dav_load(profile: &Profile) -> Option<AppData> {
     let url = dav_full_url(profile)?;
-    let client = make_client();
+    let client = make_client().ok()?;
     let auth = auth_header(&profile.dav_user, &profile.dav_pass);
     let resp = client.get(&url).header("Authorization", &auth).send().ok()?;
     if !resp.status().is_success() { return None; }
@@ -176,7 +210,10 @@ fn dav_save(profile: &Profile, data: &AppData) -> bool {
         Some(u) => u,
         None => return false,
     };
-    let client = make_client();
+    let client = match make_client() {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
     let auth = auth_header(&profile.dav_user, &profile.dav_pass);
     let body = data.to_json();
     match client
@@ -330,14 +367,13 @@ impl Storage {
         let json = self.data.to_json();
         let _ = std::fs::write(local_data_file(&slug), &json);
 
-        // WebDAV push — background thread so UI doesn't block
+        // WebDAV push
         if dav_full_url(&prof).is_some() {
             let data_clone = self.data.clone();
             let prof_clone = prof.clone();
             std::thread::spawn(move || {
-                let _ = dav_save(&prof_clone, &data_clone);
+                dav_save(&prof_clone, &data_clone);
             });
-            // Optimistic: assume it will work (last known state)
             self.dav_ok = true;
             return SyncStatus::Dav;
         }
@@ -354,7 +390,10 @@ impl Storage {
     }
 
     pub fn test_dav(&self) -> (bool, String) {
-        dav_test(self.active_profile())
+        match make_client() {
+            Ok(c) => dav_test_http(self.active_profile(), c),
+            Err(e) => (false, e),
+        }
     }
 
     // --- Import / Export

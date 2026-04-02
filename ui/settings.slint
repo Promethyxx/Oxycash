@@ -90,12 +90,18 @@ component InputField inherits Rectangle {
                 background: Palette.card;
 
                 if !is-password || show-password : TextInput {
+                    x: 8px;
+                    width: parent.width - 16px;
+                    height: parent.height;
                     text <=> root.value;
                     font-size: 15px + Palette.font-offset;
                     color: Palette.text;
                     vertical-alignment: center;
                 }
                 if is-password && !show-password : TextInput {
+                    x: 8px;
+                    width: parent.width - 16px;
+                    height: parent.height;
                     text <=> root.value;
                     font-size: 15px + Palette.font-offset;
                     color: Palette.text;
@@ -337,8 +343,9 @@ export component SettingsView inherits Flickable {
 
             if dav-status != "" : Text {
                 text: dav-status;
-                font-size: 14px + Palette.font-offset;
+                font-size: 13px + Palette.font-offset;
                 color: Palette.text2;
+                wrap: word-wrap;
             }
         }
 
