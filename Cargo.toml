@@ -1,6 +1,6 @@
 [package]
 name = "Oxycash"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 
 [features]
@@ -13,7 +13,7 @@ required-features = ["desktop"]
 
 [lib]
 crate-type = ["cdylib"]
-name = "oxycash"
+name = "oxycash_lib"
 path = "src/main.rs"
 
 [dependencies]
