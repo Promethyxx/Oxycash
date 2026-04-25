@@ -1,0 +1,14 @@
+!Type:Bank
+D01/04/2026
+T-150.00
+PCourses chez Migros
+^
+D02/04/2026
+T+2000.00
+PSalaire Avril
+^
+D03/04/2026
+T-45.50
+PRestaurant
+LCash
+^

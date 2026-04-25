@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OFX>
+  <SIGNONMSGSRSV1>
+    <SONRS>
+      <STATUS>
+        <CODE>0</CODE>
+        <SEVERITY>INFO</SEVERITY>
+      </STATUS>
+      <DTSERVER>20260415120000
+      <LANGUAGE>ENG
+    </SONRS>
+  </SIGNONMSGSRSV1>
+  <BANKMSGSRSV1>
+    <STMTTRNRS>
+      <TRNUID>2001</TRNUID>
+      <STATUS>
+        <CODE>0</CODE>
+      </STATUS>
+      <STMTRS>
+        <CURDEF>CHF</CURDEF>
+        <BANKACCTFROM>
+          <BANKID>CSCHZZ80A</BANKID>
+          <ACCTID>87654321</ACCTID>
+        </BANKACCTFROM>
+        <BANKTRANLIST>
+          <STMTTRN>
+            <TRNTYPE>DEBIT
+            <DTPOSTED>20260410</DTPOSTED>
+            <DTAVAIL>20260410
+            <TRNAMT>-1200.00
+            <FITID>20260410-RENT
+            <NAME>Regus SA - Bureau Geneva
+            <MEM>Loyer Avril 2026 - Contrat: LEASE-2026-04
+            <CHECKNUM>INV-2026-0401
+          </STMTTRN>
+          <STMTTRN>
+            <TRNTYPE>DEBIT
+            <DTPOSTED>20260412</DTPOSTED>
+            <DTAVAIL>20260413
+            <TRNAMT>-250.00
+            <FITID>20260412-AMAZON
+            <NAME>Amazon Europe
+            <MEM>Abonnement Prime - Carte: 5678
+            <CURRENCY>
+              <CURRATE>1.0000
+              <CURSYM>CHF
+          </STMTTRN>
+          <STMTTRN>
+            <TRNTYPE>CREDIT
+            <DTPOSTED>20260414</DTPOSTED>
+            <DTAVAIL>20260414
+            <TRNAMT>50.00
+            <FITID>20260414-CASHBACK
+            <NAME>UBS Cashback
+            <MEM>Remboursement 1% - Période: 03/2026
+          </STMTTRN>
+        </BANKTRANLIST>
+      </STMTRS>
+    </STMTTRNRS>
+  </BANKMSGSRSV1>
+</OFX>

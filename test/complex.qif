@@ -1,0 +1,22 @@
+!Type:Bank
+D15/04/2026
+T-1200.00
+PLoyer Avril - Appartement Geneva
+NContrat: LEASE-2026
+^
+D16/04/2026
+T-89.90
+PAmazon Prime (Abonnements)
+LBanque
+NCarte: 1234-XXXX-XXXX-5678
+^
+D17/04/2026
+T+50.00
+PRemboursement - Assurance maladie
+LCash
+^
+D18/04/2026
+T-250.00
+PVacances - Vol Paris
+NRéservation: AIR-2026-04
+^
