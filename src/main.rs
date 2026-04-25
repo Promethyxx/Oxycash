@@ -823,6 +823,44 @@ fn run() {
         window.on_delete_line(move |si, li| {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
+            let mk = st.current_month.clone();
+            let src_mi = MONTHS.iter().position(|&m| m == mk.as_str()).unwrap_or(0);
+            let sec_key = match si as usize { 0 => "revenus", 1 => "retraits", 2 => "fixes", _ => "variables" };
+
+            // If deleted line still has recurring set, clean up to prevent re-propagation on restart
+            let recurring_info = st.sec_lines(si as usize).get(li as usize)
+                .and_then(|l| l.recurring.as_ref().map(|r| (l.name.clone(), r.freq as usize, r.start.clone())));
+            if let Some((name, old_freq, start)) = recurring_info {
+                let start_mi = MONTHS.iter().position(|&m| m == start.as_str()).unwrap_or(src_mi);
+                // Origin month: clear flag (keep historical data) if past, delete if future
+                if start_mi != src_mi {
+                    let origin_key = MONTHS[start_mi].to_string();
+                    if let Some(om) = st.storage.data.months.get_mut(&origin_key) {
+                        let sec = om.section_mut(sec_key);
+                        if start_mi < src_mi {
+                            for l in sec.iter_mut() { if l.name == name { l.recurring = None; } }
+                        } else {
+                            sec.retain(|l| !(l.name == name && l.recurring.is_some()));
+                        }
+                    }
+                }
+                // Propagated months: same rule — past=clear flag, future=delete
+                for step in 1..13 {
+                    let target_mi = (start_mi + step * old_freq) % 12;
+                    if target_mi == start_mi { break; }
+                    if target_mi == src_mi { continue; }
+                    let target_key = MONTHS[target_mi].to_string();
+                    if let Some(tm) = st.storage.data.months.get_mut(&target_key) {
+                        let sec = tm.section_mut(sec_key);
+                        if target_mi < src_mi {
+                            for l in sec.iter_mut() { if l.name == name { l.recurring = None; } }
+                        } else {
+                            sec.retain(|l| !(l.name == name && l.recurring.is_some()));
+                        }
+                    }
+                }
+            }
+
             let sec = st.sec_lines_mut(si as usize);
             if (li as usize) < sec.len() { sec.remove(li as usize); }
             st.lines_expanded[si as usize] = vec![];
@@ -894,22 +932,47 @@ fn run() {
                 let line = &st.sec_lines(si as usize)[li as usize];
                 let name = line.name.clone();
                 let old_freq = line.recurring.as_ref().map(|r| r.freq as usize).unwrap_or(3);
+                let start = line.recurring.as_ref().map(|r| r.start.clone()).unwrap_or(mk.clone());
                 let sec_key = match si as usize { 0 => "revenus", 1 => "retraits", 2 => "fixes", _ => "variables" };
 
-                // Remove recurring flag on source
+                // Start from origin month so we don't miss the source entry when disabling
+                // from a propagated copy (original code used src_mi and skipped past months)
+                let start_mi = MONTHS.iter().position(|&m| m == start.as_str()).unwrap_or(src_mi);
+
+                // Remove recurring flag on current line
                 let line = &mut st.sec_lines_mut(si as usize)[li as usize];
                 line.recurring = None;
 
-                // Remove propagated entries from other months
+                // Clean origin entry if it lives in a different month than current
+                if start_mi != src_mi {
+                    let origin_key = MONTHS[start_mi].to_string();
+                    if let Some(om) = st.storage.data.months.get_mut(&origin_key) {
+                        let sec = om.section_mut(sec_key);
+                        if !include_past && start_mi < src_mi {
+                            // Past month: preserve historical data, just clear the flag
+                            for l in sec.iter_mut() { if l.name == name { l.recurring = None; } }
+                        } else {
+                            sec.retain(|l| !(l.name == name && l.recurring.is_some()));
+                        }
+                    }
+                }
+
+                // Clean all propagated months (loop from origin to avoid missing past copies)
                 for step in 1..13 {
-                    let target_mi = (src_mi + step * old_freq) % 12;
-                    if target_mi == src_mi { break; }
-                    if !include_past && target_mi < src_mi { continue; }
+                    let target_mi = (start_mi + step * old_freq) % 12;
+                    if target_mi == start_mi { break; }
+                    if target_mi == src_mi { continue; } // current line already handled above
 
                     let target_key = MONTHS[target_mi].to_string();
                     if let Some(target_month) = st.storage.data.months.get_mut(&target_key) {
                         let sec = target_month.section_mut(sec_key);
-                        sec.retain(|l| !(l.name == name && l.recurring.is_some()));
+                        if !include_past && target_mi < src_mi {
+                            // Past month: keep entry but clear recurring flag
+                            for l in sec.iter_mut() { if l.name == name { l.recurring = None; } }
+                        } else {
+                            // Future month: delete the propagated entry
+                            sec.retain(|l| !(l.name == name && l.recurring.is_some()));
+                        }
                     }
                 }
             } else {
