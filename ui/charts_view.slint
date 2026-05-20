@@ -14,11 +14,11 @@ component SummaryCard inherits Rectangle {
     background: Palette.card;
     border-width: 1px;
     border-color: Palette.card-border;
-    horizontal-stretch: 1;
 
     VerticalLayout {
         padding: 14px;
         spacing: 4px;
+        alignment: start;
 
         Text {
             text: label;
@@ -51,10 +51,11 @@ component MonthRow inherits Rectangle {
         padding-left: 4px;
         padding-right: 4px;
 
-        Text { text: month;    font-size: 14px + Palette.font-offset; color: Palette.text3;  width: 36px; horizontal-alignment: center; }
-        Text { text: income;   font-size: 14px + Palette.font-offset; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
-        Text { text: expenses; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
-        Text { text: forecast; font-size: 14px + Palette.font-offset; color: forecast-color; font-weight: 700; horizontal-stretch: 1; horizontal-alignment: right; }
+        Text { text: month;    font-size: 14px + Palette.font-offset; color: Palette.text3;  width: 40px; }
+        Rectangle { width: 60px; }
+        Text { text: income;   font-size: 14px + Palette.font-offset; color: Palette.teal;   horizontal-stretch: 1; min-width: 60px; }
+        Text { text: expenses; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-stretch: 1; min-width: 60px; }
+        Text { text: forecast; font-size: 14px + Palette.font-offset; color: forecast-color; font-weight: 700; horizontal-stretch: 1; min-width: 60px; }
     }
 }
 
@@ -105,22 +106,22 @@ export component ChartsView inherits Rectangle {
         // Row 1
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { horizontal-stretch: 1; label: I18n.charts-income;      value: total-income;      value-color: income-color; }
-            SummaryCard { horizontal-stretch: 1; label: I18n.charts-paid;        value: total-paid;        value-color: paid-color; }
+            SummaryCard { width: (root.width - 40px) / 2; label: I18n.charts-income;      value: total-income;      value-color: income-color; }
+            SummaryCard { width: (root.width - 40px) / 2; label: I18n.charts-paid;        value: total-paid;        value-color: paid-color; }
         }
 
         // Row 2
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { horizontal-stretch: 1; label: I18n.charts-to-pay;      value: total-to-pay;      value-color: to-pay-color; }
-            SummaryCard { horizontal-stretch: 1; label: I18n.charts-withdrawals; value: total-withdrawals; value-color: withdrawals-color; }
+            SummaryCard { width: (root.width - 40px) / 2; label: I18n.charts-to-pay;      value: total-to-pay;      value-color: to-pay-color; }
+            SummaryCard { width: (root.width - 40px) / 2; label: I18n.charts-withdrawals; value: total-withdrawals; value-color: withdrawals-color; }
         }
 
         // Row 3
         HorizontalLayout {
             spacing: 8px;
-            SummaryCard { horizontal-stretch: 1; label: I18n.charts-forecast;    value: total-forecast;    value-color: forecast-color; }
-            SummaryCard { horizontal-stretch: 1; label: I18n.charts-balance;     value: total-balance;     value-color: balance-color; }
+            SummaryCard { width: (root.width - 40px) / 2; label: I18n.charts-forecast;    value: total-forecast;    value-color: forecast-color; }
+            SummaryCard { width: (root.width - 40px) / 2; label: I18n.charts-balance;     value: total-balance;     value-color: balance-color; }
         }
 
         // Annual cumulative card
@@ -169,10 +170,11 @@ export component ChartsView inherits Rectangle {
                     padding-right: 4px;
                     height: 24px;
 
-                    Text { text: "";         width: 36px; }
-                    Text { text: I18n.charts-income;   font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: I18n.charts-exp;     font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: I18n.charts-forecast; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: "";         width: 40px; }
+                    Rectangle { width: 60px; }
+                    Text { text: I18n.charts-income;   font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; min-width: 60px; }
+                    Text { text: I18n.charts-exp;     font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; min-width: 60px; }
+                    Text { text: I18n.charts-forecast; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-stretch: 1; min-width: 60px; }
                 }
 
                 Rectangle { height: 1px; background: Palette.card-border; }
@@ -194,10 +196,11 @@ export component ChartsView inherits Rectangle {
                     padding-right: 4px;
                     height: 28px;
 
-                    Text { text: I18n.col-total; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; width: 36px; }
-                    Text { text: total-income;   font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.teal;   horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: total-paid;     font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.danger; horizontal-stretch: 1; horizontal-alignment: right; }
-                    Text { text: total-forecast; font-size: 14px + Palette.font-offset; font-weight: 700; color: forecast-color; horizontal-stretch: 1; horizontal-alignment: right; }
+                    Text { text: I18n.col-total; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.text; width: 40px; }
+                    Rectangle { width: 60px; }
+                    Text { text: total-income;   font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.teal;   horizontal-stretch: 1; min-width: 60px; }
+                    Text { text: total-paid;     font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.danger; horizontal-stretch: 1; min-width: 60px; }
+                    Text { text: total-forecast; font-size: 14px + Palette.font-offset; font-weight: 700; color: forecast-color; horizontal-stretch: 1; min-width: 60px; }
                 }
             }
         }

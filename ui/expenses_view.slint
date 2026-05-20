@@ -1,9 +1,6 @@
 // oxycash-rs - ui/expenses_view.slint
-// Port of build_frais_view() in special_views.py
-// Annual expenses table: Fixed / Occasional / Withdrawals
 
 import { Palette } from "palette.slint";
-import { I18n } from "i18n.slint";
 import { I18n } from "i18n.slint";
 
 export struct ExpenseLine {
@@ -20,95 +17,140 @@ export struct ExpenseSection {
     total:  float,
 }
 
-component MonthCell inherits Rectangle {
-    in property <float> value;
-    in property <color> accent-color;
-
-    horizontal-stretch: 1;
-    height: 28px;
-
+component Cell inherits Rectangle {
+    in property <string> txt;
+    in property <color>  cell-color: Palette.text;
+    in property <bool>   bold: false;
+    border-width: 1px;
+    border-color: Palette.card-border;
+    background: transparent;
     Text {
-        text: value > 0.0 ? value : "";
-        font-size: 14px + Palette.font-offset;
-        color: accent-color;
-        horizontal-alignment: center;
+        text: txt;
+        font-size: 13px + Palette.font-offset;
+        font-weight: bold ? 700 : 400;
+        color: cell-color;
+        horizontal-alignment: left;
+        vertical-alignment: center;
+        x: 4px;
+        width: parent.width - 8px;
+        height: parent.height;
+        overflow: elide;
+    }
+}
+
+component NameCell inherits Rectangle {
+    in property <string> txt;
+    in property <bool>   bold: false;
+    width: 90px;
+    border-width: 1px;
+    border-color: Palette.card-border;
+    background: transparent;
+    Text {
+        text: txt;
+        font-size: 13px + Palette.font-offset;
+        font-weight: bold ? 700 : 400;
+        color: bold ? Palette.text : Palette.text2;
+        horizontal-alignment: left;
+        vertical-alignment: center;
+        x: 6px;
+        width: parent.width - 10px;
+        height: parent.height;
+        overflow: elide;
     }
 }
 
 component ExpenseTable inherits Rectangle {
     in property <ExpenseSection> section;
     in property <color> accent;
+    in property <length> available-width: 800px;
+
+    // col-w: fill available space, min 58px
+    property <length> col-w: max(58px, (available-width - 90px - 20px) / 13);
+    property <length> table-w: 90px + 13 * col-w;
+    property <length> row-h: 28px;
 
     border-radius: 10px;
     background: Palette.card;
     border-width: 1px;
     border-color: Palette.card-border;
+    horizontal-stretch: 1;
 
     VerticalLayout {
-        padding: 12px;
-        spacing: 4px;
+        padding: 10px;
+        spacing: 0px;
 
-        // Section header
+        // Section title row (outside scroll)
         HorizontalLayout {
-            spacing: 8px;
             height: 32px;
-
             Text {
                 text: section.label;
                 font-size: 15px + Palette.font-offset;
                 font-weight: 700;
                 color: Palette.text;
                 horizontal-stretch: 1;
+                vertical-alignment: center;
             }
             Text {
                 text: section.total;
                 font-size: 14px + Palette.font-offset;
                 font-weight: 700;
                 color: accent;
+                vertical-alignment: center;
             }
         }
 
         Rectangle { height: 1px; background: Palette.card-border; }
 
-        // Column headers
-        HorizontalLayout {
-            spacing: 2px;
-            height: 20px;
+        // Horizontally scrollable table
+        Flickable {
+            height: 26px + section.lines.length * row-h;
+            viewport-width: table-w;
+            viewport-height: self.height;
+            width: root.width - 20px;
 
-            Text { text: I18n.exp-name; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 72px; }
-            Text { text: "J";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "F";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "M";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "A";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "M";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "J";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "J";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "A";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "S";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "O";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "N";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: "D";  font-size: 14px + Palette.font-offset; color: Palette.text3; horizontal-stretch: 1; horizontal-alignment: center; }
-            Text { text: I18n.exp-total; font-size: 14px + Palette.font-offset; color: Palette.text3; width: 52px; horizontal-alignment: right; }
-        }
+            VerticalLayout {
+                spacing: 0px;
 
-        for line in section.lines : HorizontalLayout {
-            spacing: 2px;
-            height: 26px;
+                // Header row
+                HorizontalLayout {
+                    spacing: 0px;
+                    height: 26px;
+                    NameCell { txt: I18n.exp-name; bold: true; }
+                    Cell { txt: "J";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "F";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "M";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "A";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "M";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "J";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "J";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "A";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "S";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "O";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "N";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "D";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: I18n.exp-total; cell-color: Palette.text3; width: col-w; bold: true; }
+                }
 
-            Text { text: line.name; font-size: 14px + Palette.font-offset; color: Palette.text2; width: 72px; overflow: elide; }
-            MonthCell { value: line.m0;  accent-color: accent; }
-            MonthCell { value: line.m1;  accent-color: accent; }
-            MonthCell { value: line.m2;  accent-color: accent; }
-            MonthCell { value: line.m3;  accent-color: accent; }
-            MonthCell { value: line.m4;  accent-color: accent; }
-            MonthCell { value: line.m5;  accent-color: accent; }
-            MonthCell { value: line.m6;  accent-color: accent; }
-            MonthCell { value: line.m7;  accent-color: accent; }
-            MonthCell { value: line.m8;  accent-color: accent; }
-            MonthCell { value: line.m9;  accent-color: accent; }
-            MonthCell { value: line.m10; accent-color: accent; }
-            MonthCell { value: line.m11; accent-color: accent; }
-            Text { text: line.total; font-size: 14px + Palette.font-offset; font-weight: 700; color: accent; width: 52px; horizontal-alignment: right; vertical-alignment: center; }
+                // Data rows
+                for line in section.lines : HorizontalLayout {
+                    spacing: 0px;
+                    height: row-h;
+                    NameCell { txt: line.name; }
+                    Cell { txt: line.m0  > 0.0 ? line.m0  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m1  > 0.0 ? line.m1  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m2  > 0.0 ? line.m2  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m3  > 0.0 ? line.m3  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m4  > 0.0 ? line.m4  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m5  > 0.0 ? line.m5  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m6  > 0.0 ? line.m6  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m7  > 0.0 ? line.m7  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m8  > 0.0 ? line.m8  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m9  > 0.0 ? line.m9  : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m10 > 0.0 ? line.m10 : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.m11 > 0.0 ? line.m11 : ""; cell-color: accent; width: col-w; }
+                    Cell { txt: line.total > 0.0 ? line.total : ""; cell-color: accent; width: col-w; bold: true; }
+                }
+            }
         }
     }
 }
@@ -120,11 +162,10 @@ export component ExpensesView inherits Flickable {
     in property <ExpenseSection> occasional: { label: "", lines: [], total: 0.0 };
     in property <ExpenseSection> withdrawals:{ label: "",lines: [], total: 0.0 };
 
-    // 77px = section header+divider+col-headers, 26px per line, 24px padding, 36px title, 40px bottom
     viewport-height: 36px + 14px
-        + (77px + fixed.lines.length * 26px + 24px)
-        + 12px + (77px + occasional.lines.length * 26px + 24px)
-        + 12px + (77px + withdrawals.lines.length * 26px + 24px)
+        + (32px + 1px + 26px + fixed.lines.length * 28px + 24px)
+        + 12px + (32px + 1px + 26px + occasional.lines.length * 28px + 24px)
+        + 12px + (32px + 1px + 26px + withdrawals.lines.length * 28px + 24px)
         + 40px + 28px;
 
     VerticalLayout {
@@ -138,9 +179,9 @@ export component ExpensesView inherits Flickable {
             color: Palette.text;
         }
 
-        ExpenseTable { section: fixed;       accent: Palette.blue; }
-        ExpenseTable { section: occasional;  accent: Palette.amber; }
-        ExpenseTable { section: withdrawals; accent: Palette.teal; }
+        ExpenseTable { section: fixed;        accent: Palette.blue;  available-width: root.width - 28px; }
+        ExpenseTable { section: occasional;   accent: Palette.amber; available-width: root.width - 28px; }
+        ExpenseTable { section: withdrawals;  accent: Palette.teal;  available-width: root.width - 28px; }
 
         Rectangle { height: 40px; }
     }
