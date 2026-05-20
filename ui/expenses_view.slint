@@ -120,7 +120,12 @@ export component ExpensesView inherits Flickable {
     in property <ExpenseSection> occasional: { label: "", lines: [], total: 0.0 };
     in property <ExpenseSection> withdrawals:{ label: "",lines: [], total: 0.0 };
 
-    viewport-height: 900px;
+    // 77px = section header+divider+col-headers, 26px per line, 24px padding, 36px title, 40px bottom
+    viewport-height: 36px + 14px
+        + (77px + fixed.lines.length * 26px + 24px)
+        + 12px + (77px + occasional.lines.length * 26px + 24px)
+        + 12px + (77px + withdrawals.lines.length * 26px + 24px)
+        + 40px + 28px;
 
     VerticalLayout {
         padding: 14px;

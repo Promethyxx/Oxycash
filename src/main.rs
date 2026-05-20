@@ -494,6 +494,46 @@ fn push_savings(window: &AppWindow, state: &AppState) {
     window.set_savings_list(ModelRc::new(VecModel::from(items)));
 }
 
+// --- Sync Frais from monthly data (fully automatic, replaces manual frais entries)
+fn sync_frais_from_months(state: &mut AppState) {
+    use model::FraisLine;
+    use std::collections::HashMap;
+
+    // sec_idx → (name → [f64; 12])
+    let mut fixes:    HashMap<String, [f64; 12]> = HashMap::new();
+    let mut ponctuels: HashMap<String, [f64; 12]> = HashMap::new();
+    let mut retraits:  HashMap<String, [f64; 12]> = HashMap::new();
+
+    for (mi, &mk) in MONTHS.iter().enumerate() {
+        let m = match state.storage.data.months.get(mk) {
+            Some(m) => m,
+            None => continue,
+        };
+        for line in &m.fixes {
+            let entry = fixes.entry(line.name.clone()).or_insert([0.0; 12]);
+            entry[mi] += line.banque + line.cash;
+        }
+        for line in &m.variables {
+            let entry = ponctuels.entry(line.name.clone()).or_insert([0.0; 12]);
+            entry[mi] += line.banque + line.cash;
+        }
+        for line in &m.retraits {
+            let entry = retraits.entry(line.name.clone()).or_insert([0.0; 12]);
+            entry[mi] += line.banque;
+        }
+    }
+
+    let to_vec = |map: HashMap<String, [f64; 12]>| -> Vec<FraisLine> {
+        let mut v: Vec<FraisLine> = map.into_iter().map(|(name, monthly)| FraisLine { name, monthly }).collect();
+        v.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        v
+    };
+
+    state.storage.data.frais.fixes    = to_vec(fixes);
+    state.storage.data.frais.ponctuels = to_vec(ponctuels);
+    state.storage.data.frais.retraits  = to_vec(retraits);
+}
+
 // --- Push expenses (frais) data to window
 fn make_expense_section(label: &str, lines: &[FraisLine]) -> ExpenseSection {
     let mut sec_total = 0.0_f64;
@@ -692,7 +732,8 @@ fn run() {
 
     // Initial push
     {
-        let st = state.lock().unwrap();
+        let mut st = state.lock().unwrap();
+        sync_frais_from_months(&mut st);
         window.set_current_tab(month_key_to_tab(&st.current_month));
         window.set_profile_name(st.storage.active_profile().name.clone().into());
         window.set_currency(st.storage.cfg.currency.clone().into());
@@ -779,6 +820,7 @@ fn run() {
             let mut st = state_ref.lock().unwrap();
             if let Ok(v) = val.parse::<f64>() {
                 st.sec_lines_mut(si as usize)[li as usize].banque = v;
+                sync_frais_from_months(&mut st);
                 st.storage.save();
                 push_month(&w, &st);
             }
@@ -794,6 +836,7 @@ fn run() {
             let mut st = state_ref.lock().unwrap();
             if let Ok(v) = val.parse::<f64>() {
                 st.sec_lines_mut(si as usize)[li as usize].cash = v;
+                sync_frais_from_months(&mut st);
                 st.storage.save();
                 push_month(&w, &st);
             }
@@ -811,6 +854,7 @@ fn run() {
             st.sec_lines_mut(si as usize).sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
             st.lines_expanded[si as usize] = vec![];
             st.ensure_expanded();
+            sync_frais_from_months(&mut st);
             st.storage.save();
             push_month(&w, &st);
         });
@@ -865,6 +909,7 @@ fn run() {
             if (li as usize) < sec.len() { sec.remove(li as usize); }
             st.lines_expanded[si as usize] = vec![];
             st.ensure_expanded();
+            sync_frais_from_months(&mut st);
             st.storage.save();
             push_month(&w, &st);
         });
@@ -877,11 +922,16 @@ fn run() {
         window.on_add_line(move |si| {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
-            st.sec_lines_mut(si as usize).push(Line::new("New entry"));
+            let new_name = "New entry";
+            if st.sec_lines(si as usize).iter().any(|l| l.name == new_name) {
+                return;
+            }
+            st.sec_lines_mut(si as usize).push(Line::new(new_name));
             st.sec_lines_mut(si as usize).sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
             st.sections_open[si as usize] = true;
             st.lines_expanded[si as usize] = vec![];
             st.ensure_expanded();
+            sync_frais_from_months(&mut st);
             st.storage.save();
             push_month(&w, &st);
         });
@@ -896,6 +946,7 @@ fn run() {
             let mut st = state_ref.lock().unwrap();
             let line = &mut st.sec_lines_mut(si as usize)[li as usize];
             if (pi as usize) < line.payments.len() { line.payments.remove(pi as usize); }
+            sync_frais_from_months(&mut st);
             st.storage.save();
             push_month(&w, &st);
         });
@@ -911,6 +962,7 @@ fn run() {
             if let Ok(amount) = amt.parse::<f64>() {
                 let d = if date.is_empty() { today() } else { date.to_string() };
                 st.sec_lines_mut(si as usize)[li as usize].payments.push(Payment { date: d, amount });
+                sync_frais_from_months(&mut st);
                 st.storage.save();
                 push_month(&w, &st);
             }
@@ -1021,6 +1073,7 @@ fn run() {
                 }
             }
 
+            sync_frais_from_months(&mut st);
             st.storage.save();
             push_month(&w, &st);
         });
