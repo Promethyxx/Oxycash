@@ -78,7 +78,7 @@ component ExpenseTable inherits Rectangle {
     VerticalLayout {
         padding: 10px;
         spacing: 0px;
-
+        
         // Section title row (outside scroll)
         HorizontalLayout {
             height: 32px;
@@ -87,8 +87,10 @@ component ExpenseTable inherits Rectangle {
                 font-size: 15px + Palette.font-offset;
                 font-weight: 700;
                 color: Palette.text;
-                horizontal-stretch: 1;
                 vertical-alignment: center;
+                // Calcul pour s'arrêter pile au début de la 13ème colonne (Total)
+                width: 90px + 12 * col-w;
+                overflow: elide;
             }
             Text {
                 text: section.total;
@@ -96,10 +98,12 @@ component ExpenseTable inherits Rectangle {
                 font-weight: 700;
                 color: accent;
                 vertical-alignment: center;
+                horizontal-alignment: left;
             }
         }
 
-        Rectangle { height: 1px; background: Palette.card-border; }
+        Rectangle { height: 1px;
+            background: Palette.card-border; }
 
         // Horizontally scrollable table
         Flickable {
@@ -110,24 +114,23 @@ component ExpenseTable inherits Rectangle {
 
             VerticalLayout {
                 spacing: 0px;
-
                 // Header row
                 HorizontalLayout {
                     spacing: 0px;
                     height: 26px;
                     NameCell { txt: I18n.exp-name; bold: true; }
-                    Cell { txt: "J";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "F";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "M";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "A";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "M";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "J";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "J";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "A";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "S";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "O";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "N";  cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: "D";  cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "J"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "F"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "M"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "A"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "M"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "J"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "J"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "A"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "S"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "O"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "N"; cell-color: Palette.text3; width: col-w; }
+                    Cell { txt: "D"; cell-color: Palette.text3; width: col-w; }
                     Cell { txt: I18n.exp-total; cell-color: Palette.text3; width: col-w; bold: true; }
                 }
 
@@ -161,17 +164,15 @@ export component ExpensesView inherits Flickable {
     in property <ExpenseSection> fixed:      { label: "",      lines: [], total: 0.0 };
     in property <ExpenseSection> occasional: { label: "", lines: [], total: 0.0 };
     in property <ExpenseSection> withdrawals:{ label: "",lines: [], total: 0.0 };
-
     viewport-height: 36px + 14px
         + (32px + 1px + 26px + fixed.lines.length * 28px + 24px)
         + 12px + (32px + 1px + 26px + occasional.lines.length * 28px + 24px)
         + 12px + (32px + 1px + 26px + withdrawals.lines.length * 28px + 24px)
         + 40px + 28px;
-
+        
     VerticalLayout {
         padding: 14px;
         spacing: 12px;
-
         Text {
             text: I18n.exp-title;
             font-size: 22px + Palette.font-offset;
@@ -185,4 +186,4 @@ export component ExpensesView inherits Flickable {
 
         Rectangle { height: 40px; }
     }
-}
+}                    
