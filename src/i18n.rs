@@ -72,8 +72,21 @@ fn en() -> HashMap<&'static str, &'static str> {
     m.insert("cfg_url","WebDAV URL"); m.insert("cfg_user","Username"); m.insert("cfg_password","Password");
     m.insert("cfg_save","Save"); m.insert("cfg_test","Test"); m.insert("cfg_clear","Clear");
     m.insert("cfg_export","Export"); m.insert("cfg_export_btn","Export JSON");
+    m.insert("cfg_export_desc","Export full profile as JSON backup.");
     m.insert("cfg_import","Import"); m.insert("cfg_import_btn","Import JSON");
+    m.insert("cfg_import_desc","Restore a full profile from a JSON backup. Replaces current data.");
     m.insert("cfg_data","Data"); m.insert("cfg_reset","Reset all data");
+    m.insert("cfg_statement_title","Bank statement");
+    m.insert("cfg_statement_import_desc","Import a bank statement into the current month (CSV or OFX). Duplicates are automatically ignored.");
+    m.insert("cfg_statement_export_desc","Export current month transactions:");
+    m.insert("cfg_import_csv","Import CSV");
+    m.insert("cfg_import_ofx","Import OFX");
+    m.insert("cfg_export_csv","Export CSV");
+    m.insert("cfg_export_ofx","Export OFX");
+    m.insert("cfg_hash_title","Import deduplication");
+    m.insert("cfg_hash_desc","Location of the file used to detect already-imported transactions:");
+    m.insert("cfg_hash_data","Data folder");
+    m.insert("cfg_hash_exe","App folder");
     m
 }
 
@@ -129,7 +142,20 @@ fn fr() -> HashMap<&'static str, &'static str> {
     m.insert("cfg_url","URL WebDAV"); m.insert("cfg_user","Utilisateur"); m.insert("cfg_password","Mot de passe");
     m.insert("cfg_save","Sauver"); m.insert("cfg_test","Tester"); m.insert("cfg_clear","Effacer");
     m.insert("cfg_export","Export"); m.insert("cfg_export_btn","Exporter JSON");
+    m.insert("cfg_export_desc","Exporte le profil complet en JSON (sauvegarde).");
     m.insert("cfg_import","Import"); m.insert("cfg_import_btn","Importer JSON");
+    m.insert("cfg_import_desc","Restaure un profil depuis une sauvegarde JSON. Remplace les données actuelles.");
     m.insert("cfg_data","Données"); m.insert("cfg_reset","Réinitialiser");
+    m.insert("cfg_statement_title","Relevé bancaire");
+    m.insert("cfg_statement_import_desc","Importe un relevé dans le mois courant (CSV ou OFX). Les doublons sont ignorés automatiquement.");
+    m.insert("cfg_statement_export_desc","Exporter les transactions du mois courant :");
+    m.insert("cfg_import_csv","Importer CSV");
+    m.insert("cfg_import_ofx","Importer OFX");
+    m.insert("cfg_export_csv","Exporter CSV");
+    m.insert("cfg_export_ofx","Exporter OFX");
+    m.insert("cfg_hash_title","Déduplication des imports");
+    m.insert("cfg_hash_desc","Emplacement du fichier de détection des transactions déjà importées :");
+    m.insert("cfg_hash_data","Dossier données");
+    m.insert("cfg_hash_exe","Dossier appli");
     m
 }

@@ -109,6 +109,9 @@ export component AppWindow inherits Window {
     in property <string>   lang-label:      "FR";
     in property <string>    toast-message:   "";
     in property <bool>      toast-show:      false;
+    // Hash storage
+    in property <string>    hash-storage-mode: "data";
+    in property <string>    hash-file-path:    "";
     in property <string>  month-name:       "January";
     in property <string>  sum-income:       "0"; in property <string>  sum-income-b: "0"; in property <string>  sum-income-c: "0"; in property <color>   sum-income-col:  #7BC47F;
     in property <string>  sum-paid:         "0"; in property <string>  sum-paid-b:   "0"; in property <string>  sum-paid-c:   "0";
@@ -225,6 +228,11 @@ export component AppWindow inherits Window {
     callback switch-profile(int);
     callback delete-profile(int);
     callback add-profile(string);
+    callback do-import-csv();
+    callback do-import-ofx();
+    callback do-export-csv();
+    callback do-export-ofx();
+    callback set-hash-storage(string);
 
     // Toast overlay — outside the main layout, positioned absolutely
     Toast {
@@ -481,6 +489,8 @@ export component AppWindow inherits Window {
                 dav-user  <=>  settings-dav-user;
                 dav-pass  <=>  settings-dav-pass;
                 currency-edit <=> settings-currency-edit;
+                hash-storage-mode: hash-storage-mode;
+                hash-file-path:    hash-file-path;
                 toggle-theme       => { root.toggle-theme(); }
                 save-dav           => { root.save-dav(); }
                 test-dav           => { root.test-dav(); }
@@ -492,6 +502,11 @@ export component AppWindow inherits Window {
                 switch-profile(i)  => { root.switch-profile(i); }
                 delete-profile(i)  => { root.delete-profile(i); }
                 add-profile(name)  => { root.add-profile(name); }
+                do-import-csv      => { root.do-import-csv(); }
+                do-import-ofx      => { root.do-import-ofx(); }
+                do-export-csv      => { root.do-export-csv(); }
+                do-export-ofx      => { root.do-export-ofx(); }
+                set-hash-storage(m) => { root.set-hash-storage(m); }
             }
         }
     }

@@ -143,6 +143,10 @@ export component SettingsView inherits Flickable {
     // Currency field
     in-out property <string> currency-edit: "CHF";
 
+    // Hash storage
+    in property <string> hash-storage-mode: "data"; // "data" | "exe"
+    in property <string> hash-file-path:    "";
+
     callback toggle-theme;
     callback save-dav();
     callback test-dav();
@@ -154,6 +158,14 @@ export component SettingsView inherits Flickable {
     callback switch-profile(int);
     callback delete-profile(int);
     callback add-profile(string);
+    // Relevé bancaire — import
+    callback do-import-csv();
+    callback do-import-ofx();
+    // Relevé bancaire — export mois courant
+    callback do-export-csv();
+    callback do-export-ofx();
+    // Hash storage
+    callback set-hash-storage(string);
 
     VerticalLayout {
         padding: 14px;
@@ -349,9 +361,16 @@ export component SettingsView inherits Flickable {
             }
         }
 
-        // ── Export ────────────────────────────
+        // ── Export profil JSON ────────────────
         Card {
             title: I18n.cfg-export;
+
+            Text {
+                text: I18n.cfg-export-desc;
+                font-size: 12px + Palette.font-offset;
+                color: Palette.text3;
+                wrap: word-wrap;
+            }
 
             ActionBtn {
                 label: I18n.cfg-export-btn;
@@ -359,22 +378,17 @@ export component SettingsView inherits Flickable {
                 text-color: Palette.text;
                 clicked => { root.do-export(); }
             }
-
-            Text {
-                text: I18n.cfg-export-btn;
-                font-size: 14px + Palette.font-offset;
-                color: Palette.text3;
-            }
         }
 
-        // ── Import ───────────────────────────
+        // ── Import profil JSON ───────────────
         Card {
             title: I18n.cfg-import;
 
             Text {
-                text: I18n.cfg-import-btn;
-                font-size: 14px + Palette.font-offset;
+                text: I18n.cfg-import-desc;
+                font-size: 12px + Palette.font-offset;
                 color: Palette.text3;
+                wrap: word-wrap;
             }
 
             ActionBtn {
@@ -382,6 +396,98 @@ export component SettingsView inherits Flickable {
                 bg-color: Palette.teal;
                 text-color: #1a1a1a;
                 clicked => { root.do-import(); }
+            }
+        }
+
+        // ── Relevé bancaire ──────────────────
+        Card {
+            title: I18n.cfg-statement-title;
+
+            Text {
+                text: I18n.cfg-statement-import-desc;
+                font-size: 12px + Palette.font-offset;
+                color: Palette.text3;
+                wrap: word-wrap;
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                height: 36px;
+
+                ActionBtn {
+                    label: I18n.cfg-import-csv;
+                    bg-color: Palette.card;
+                    text-color: Palette.text;
+                    clicked => { root.do-import-csv(); }
+                }
+                ActionBtn {
+                    label: I18n.cfg-import-ofx;
+                    bg-color: Palette.card;
+                    text-color: Palette.text;
+                    clicked => { root.do-import-ofx(); }
+                }
+            }
+
+            Text {
+                text: I18n.cfg-statement-export-desc;
+                font-size: 12px + Palette.font-offset;
+                color: Palette.text3;
+                wrap: word-wrap;
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                height: 36px;
+
+                ActionBtn {
+                    label: I18n.cfg-export-csv;
+                    bg-color: Palette.card;
+                    text-color: Palette.text;
+                    clicked => { root.do-export-csv(); }
+                }
+                ActionBtn {
+                    label: I18n.cfg-export-ofx;
+                    bg-color: Palette.card;
+                    text-color: Palette.text;
+                    clicked => { root.do-export-ofx(); }
+                }
+            }
+        }
+
+        // ── Stockage des hashes d'import ─────
+        Card {
+            title: I18n.cfg-hash-title;
+
+            Text {
+                text: I18n.cfg-hash-desc;
+                font-size: 12px + Palette.font-offset;
+                color: Palette.text3;
+                wrap: word-wrap;
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                height: 36px;
+
+                ActionBtn {
+                    label: I18n.cfg-hash-data;
+                    bg-color: hash-storage-mode == "data" ? Palette.teal : Palette.card;
+                    text-color: hash-storage-mode == "data" ? #1a1a1a : Palette.text2;
+                    clicked => { root.set-hash-storage("data"); }
+                }
+                ActionBtn {
+                    label: I18n.cfg-hash-exe;
+                    bg-color: hash-storage-mode == "exe" ? Palette.teal : Palette.card;
+                    text-color: hash-storage-mode == "exe" ? #1a1a1a : Palette.text2;
+                    clicked => { root.set-hash-storage("exe"); }
+                }
+            }
+
+            if hash-file-path != "" : Text {
+                text: hash-file-path;
+                font-size: 11px + Palette.font-offset;
+                color: Palette.text3;
+                wrap: word-wrap;
             }
         }
 
