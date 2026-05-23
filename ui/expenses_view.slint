@@ -159,20 +159,25 @@ component ExpenseTable inherits Rectangle {
 }
 
 export component ExpensesView inherits Flickable {
-    viewport-width: self.width;
     in property <string>         currency:   "CHF";
     in property <ExpenseSection> fixed:      { label: "",      lines: [], total: 0.0 };
     in property <ExpenseSection> occasional: { label: "", lines: [], total: 0.0 };
     in property <ExpenseSection> withdrawals:{ label: "",lines: [], total: 0.0 };
+
+    // Largeur minimale du tableau : colonne nom + 13 colonnes de 58px
+    property <length> min-table-w: 90px + 13 * 58px + 28px; // 28px = padding x2
+    viewport-width:  max(self.width, min-table-w);
     viewport-height: 36px + 14px
         + (32px + 1px + 26px + fixed.lines.length * 28px + 24px)
         + 12px + (32px + 1px + 26px + occasional.lines.length * 28px + 24px)
         + 12px + (32px + 1px + 26px + withdrawals.lines.length * 28px + 24px)
         + 40px + 28px;
-        
+
     VerticalLayout {
         padding: 14px;
         spacing: 12px;
+        width: root.viewport-width;
+
         Text {
             text: I18n.exp-title;
             font-size: 22px + Palette.font-offset;
@@ -180,9 +185,9 @@ export component ExpensesView inherits Flickable {
             color: Palette.text;
         }
 
-        ExpenseTable { section: fixed;        accent: Palette.blue;  available-width: root.width - 28px; }
-        ExpenseTable { section: occasional;   accent: Palette.amber; available-width: root.width - 28px; }
-        ExpenseTable { section: withdrawals;  accent: Palette.teal;  available-width: root.width - 28px; }
+        ExpenseTable { section: fixed;        accent: Palette.blue;  available-width: root.viewport-width - 28px; }
+        ExpenseTable { section: occasional;   accent: Palette.amber; available-width: root.viewport-width - 28px; }
+        ExpenseTable { section: withdrawals;  accent: Palette.teal;  available-width: root.viewport-width - 28px; }
 
         Rectangle { height: 40px; }
     }
