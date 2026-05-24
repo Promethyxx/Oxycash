@@ -1,17 +1,10 @@
-# Oxycash
-- Rust standalone budget app made to run everywhere.
-   - Android
-   - Linux
-   - Windows
----
-# Contributing
-You can find the contributing rules at :
-https://github.com/Promethyxx/Oxyon/blob/main/contributing.md
+![Oxycash Logo](assets/oxycash_dark.png)
 
-# Manifest
-You can find my manifest at :
-https://github.com/Promethyxx/Oxyon/blob/main/manifest.md
+# Oxycash
+---
+Rust GUI standalone budget app. Runs on Android, Linux, and Windows.
+
+---
 
 # Roadmap
-You can find the roadmap at :
-https://github.com/Promethyxx/Oxyon
+Centralized roadmap: [Oxyon](https://github.com/Promethyxx/Oxyon)
