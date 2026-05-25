@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE26: true
 jobs:
   build:
     strategy:
@@ -87,8 +89,18 @@ jobs:
       uses: android-actions/setup-android@v3
     - name: Install Android NDK
       run: |
-        sdkmanager "ndk;27.2.12479018"
-        echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
+        sdkmanager "ndk;28.0.13004108"
+        echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/28.0.13004108" >> $GITHUB_ENV
+    - name: Setup keystore
+      env:
+        KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE }}
+        STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        echo "$KEYSTORE_B64" | base64 -d > keystore.jks
+        printf '\n[package.metadata.android.signing.release]\nstore_file = "../../keystore.jks"\nstore_password = "%s"\nkey_alias = "%s"\nkey_password = "%s"\n' \
+          "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" >> Cargo.toml
     - name: Install cargo-apk
       run: cargo install cargo-apk
     - name: Build APK
