@@ -46,7 +46,7 @@ jobs:
     - name: Install cargo-apk
       run: cargo install cargo-apk
     - name: Build APK
-      run: cargo apk build --release
+      run: cargo apk build --release --lib
       env:
         ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
     - name: Rename APK
