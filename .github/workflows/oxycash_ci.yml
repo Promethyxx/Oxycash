@@ -95,12 +95,14 @@ jobs:
       env:
         KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE }}
         STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       run: |
         echo "$KEYSTORE_B64" | base64 -d > keystore.jks
-        printf '\n[package.metadata.android.signing.release]\npath = "../../keystore.jks"\nstore_password = "%s"\nkey_alias = "%s"\nkey_password = "%s"\n' \
-          "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" >> Cargo.toml
+        cat >> Cargo.toml << 'TOML_EOF'
+
+[package.metadata.android.signing.release]
+path = "../../keystore.jks"
+TOML_EOF
+        echo "keystore_password = \"$STORE_PASSWORD\"" >> Cargo.toml
     - name: Install cargo-apk
       run: cargo install cargo-apk
     - name: Build APK
