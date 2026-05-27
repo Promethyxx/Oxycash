@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+#![cfg_attr(not(target_os = "android"), windows_subsystem = "windows")]
 
 slint::include_modules!();
 

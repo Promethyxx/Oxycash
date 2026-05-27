@@ -9,9 +9,9 @@
 - French
 ---
 ## Platforms
-| | Linux ARM64 | Linux x64 | Mac ARM64 | Windows x64 |
-|---|:---:|:---:|:---:|:---:|
-| Oxycash | ✅ | ✅ | 🛠️ | ✅ |
+| | Android | Linux ARM64 | Linux x64 | Mac ARM64 | Windows x64 |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Oxycash | ✅ | ✅ | ✅ | 🛠️ | ✅ |
 ---
 ## Building from source
 ### Android
