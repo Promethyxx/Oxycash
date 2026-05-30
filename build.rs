@@ -9,6 +9,7 @@ fn windows_resources() {
         return;
     }
     println!("cargo:rustc-link-arg=/SUBSYSTEM:WINDOWS");
+    println!("cargo:rustc-link-arg=/ENTRY:mainCRTStartup");
     let icon = std::path::Path::new("assets/Oxycash_icon.ico");
     if icon.exists() {
         let mut res = winresource::WindowsResource::new();
