@@ -52,7 +52,7 @@ jobs:
     - name: Rename APK
       run: |
         mkdir -p apk_out
-        cp target/release/apk/*.apk apk_out/Oxycash_And.apk
+        find target -name "*.apk" -exec cp {} apk_out/Oxycash_And.apk \;
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
