@@ -1,5 +1,3 @@
-#![cfg_attr(not(target_os = "android"), windows_subsystem = "windows")]
-
 slint::include_modules!();
 
 mod model;
