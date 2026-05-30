@@ -51,8 +51,10 @@ jobs:
         ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
     - name: Rename APK
       run: |
-        mkdir -p apk_out
-        find target -name "*.apk" -exec cp {} apk_out/Oxycash_And.apk \;
+        echo "=== Contenu de target/ ==="
+        find target -name "*.apk" 2>/dev/null || echo "Aucun APK trouvé"
+        find target -name "*.apk" -o -name "Oxycash*" 2>/dev/null | head -20
+        ls -la target/ || true
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
