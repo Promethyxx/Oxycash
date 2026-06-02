@@ -2,7 +2,10 @@
 <component type="desktop-application">
   <id>io.github.promethyxx.Oxycash</id>
   <name>Oxycash</name>
-  <summary>Rust portable GUI budget app</summary>
+  <summary>Personal finance manager</summary>
+  <description>
+    <p>Oxycash is a personal finance application.</p>
+  </description>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
   <url type="homepage">https://github.com/Promethyxx/Oxycash</url>
