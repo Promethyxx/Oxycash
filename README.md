@@ -36,4 +36,18 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 
 ---
 ## Roadmap
-https://github.com/Promethyxx/Oxyon
+## 🔴 NOW
+- Tabs
+   - salary
+   - labels,  piece n°, descrition, activity, category, Deposit, Withdraw, VAT, account, notes, categories of payment
+   - logistic
+   - interoperability through oyxshop
+   - disable tabs
+   - Add tab
+## 🟡 NEXT
+ - ### Release:
+   - Chocolatey
+   - MS Store
+   - Winget
+## 🔵 LATER
+---
