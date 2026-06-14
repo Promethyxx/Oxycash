@@ -37,7 +37,9 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 ---
 ## Roadmap
 ## 🔴 NOW
-- Tabs
+- ### Settings
+    - Sync conflict management
+- ### Tabs
    - salary
    - labels,  piece n°, descrition, activity, category, Deposit, Withdraw, VAT, account, notes, categories of payment
    - logistic
