@@ -21,6 +21,15 @@ pub struct Profile {
     pub dav_user: String,
     #[serde(default)]
     pub dav_pass: String,
+    // --- WebDAV secondaire (optionnel)
+    #[serde(default)]
+    pub dav2_url: String,
+    #[serde(default)]
+    pub dav2_user: String,
+    #[serde(default)]
+    pub dav2_pass: String,
+    #[serde(default)]
+    pub dav2_enabled: bool,
 }
 
 impl Profile {
@@ -31,7 +40,34 @@ impl Profile {
             dav_url: String::new(),
             dav_user: String::new(),
             dav_pass: String::new(),
+            dav2_url: String::new(),
+            dav2_user: String::new(),
+            dav2_pass: String::new(),
+            dav2_enabled: false,
         }
+    }
+
+    /// Retourne un Profile représentant le WebDAV secondaire comme s'il était primaire,
+    /// pour pouvoir réutiliser toutes les fonctions dav_* existantes.
+    pub fn as_dav2_profile(&self) -> Profile {
+        Profile {
+            name: self.name.clone(),
+            slug: self.slug.clone(),
+            dav_url: self.dav2_url.clone(),
+            dav_user: self.dav2_user.clone(),
+            dav_pass: self.dav2_pass.clone(),
+            dav2_url: String::new(),
+            dav2_user: String::new(),
+            dav2_pass: String::new(),
+            dav2_enabled: false,
+        }
+    }
+
+    pub fn has_dav2(&self) -> bool {
+        self.dav2_enabled
+            && !self.dav2_url.trim().is_empty()
+            && !self.dav2_user.trim().is_empty()
+            && !self.dav2_pass.trim().is_empty()
     }
 }
 
@@ -98,6 +134,10 @@ fn local_data_file(slug: &str) -> PathBuf {
 
 fn dav_filename(slug: &str) -> String {
     format!("oxycash_{}.json", slug)
+}
+
+fn dav_marker_filename(slug: &str) -> String {
+    format!("oxycash_{}.oxysync", slug)
 }
 
 // --- Config I/O
@@ -442,6 +482,26 @@ fn dav_full_url(profile: &Profile) -> Option<String> {
     Some(full)
 }
 
+fn dav_marker_url(profile: &Profile) -> Option<String> {
+    let url  = profile.dav_url.trim();
+    let user = profile.dav_user.trim();
+    let pw   = profile.dav_pass.trim();
+    if url.is_empty() || user.is_empty() || pw.is_empty() {
+        return None;
+    }
+    let base = if url.ends_with('/') {
+        url.to_string()
+    } else {
+        format!("{}/", url)
+    };
+    let full = if base.starts_with("http://") || base.starts_with("https://") {
+        format!("{}{}", base, dav_marker_filename(&profile.slug))
+    } else {
+        format!("https://{}{}", base, dav_marker_filename(&profile.slug))
+    };
+    Some(full)
+}
+
 fn auth_header(user: &str, pw: &str) -> String {
     format!("Basic {}", STANDARD.encode(format!("{}:{}", user, pw)))
 }
@@ -525,6 +585,58 @@ fn dav_save(profile: &Profile, data: &AppData) -> bool {
     }
 }
 
+// --- Marqueur de sync
+/// Retourne le timestamp Unix en secondes depuis l'epoch.
+fn now_ts() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+/// Lit le marqueur .oxysync d'un WebDAV. Retourne 0 si absent ou illisible.
+fn dav_read_marker(profile: &Profile) -> u64 {
+    let url = match dav_marker_url(profile) {
+        Some(u) => u,
+        None => return 0,
+    };
+    let client = match make_client() {
+        Ok(c) => c,
+        Err(_) => return 0,
+    };
+    let auth = auth_header(&profile.dav_user, &profile.dav_pass);
+    let resp = match client.get(&url).header("Authorization", &auth).send() {
+        Ok(r) if r.status().is_success() => r,
+        _ => return 0,
+    };
+    resp.text().ok()
+        .and_then(|t| t.trim().parse::<u64>().ok())
+        .unwrap_or(0)
+}
+
+/// Écrit le marqueur .oxysync sur un WebDAV.
+fn dav_write_marker(profile: &Profile, ts: u64) -> bool {
+    let url = match dav_marker_url(profile) {
+        Some(u) => u,
+        None => return false,
+    };
+    let client = match make_client() {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+    let auth = auth_header(&profile.dav_user, &profile.dav_pass);
+    match client
+        .put(&url)
+        .header("Authorization", &auth)
+        .header("Content-Type", "text/plain; charset=utf-8")
+        .body(ts.to_string())
+        .send()
+    {
+        Ok(r) => matches!(r.status().as_u16(), 200 | 201 | 204),
+        Err(_) => false,
+    }
+}
+
 // --- Storage manager
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SyncStatus {
@@ -581,6 +693,10 @@ impl Storage {
             dav_url: String::new(),
             dav_user: String::new(),
             dav_pass: String::new(),
+            dav2_url: String::new(),
+            dav2_user: String::new(),
+            dav2_pass: String::new(),
+            dav2_enabled: false,
         });
         save_config(&self.cfg);
         slug
@@ -612,22 +728,67 @@ impl Storage {
         save_config(&self.cfg);
     }
 
+    pub fn save_profile_dav2(&mut self, slug: &str, url: &str, user: &str, pw: &str, enabled: bool) {
+        if let Some(p) = self.cfg.profiles.iter_mut().find(|p| p.slug == slug) {
+            p.dav2_url     = url.to_string();
+            p.dav2_user    = user.to_string();
+            p.dav2_pass    = pw.to_string();
+            p.dav2_enabled = enabled;
+        }
+        save_config(&self.cfg);
+    }
+
+    pub fn test_dav2(&self) -> (bool, String) {
+        let prof = self.active_profile();
+        if !prof.has_dav2() {
+            return (false, "WebDAV secondaire non configuré".into());
+        }
+        match make_client() {
+            Ok(c) => dav_test_http(&prof.as_dav2_profile(), c),
+            Err(e) => (false, e),
+        }
+    }
+
     // --- Load / Save
     pub fn load(&mut self) -> SyncStatus {
         let prof = self.active_profile().clone();
         let slug = prof.slug.clone();
 
-        if dav_full_url(&prof).is_some() {
-            if let Some(mut app) = dav_load(&prof) {
-                apply_recurring(&mut app);
-                let dir = local_dir();
-                let _ = std::fs::create_dir_all(&dir);
-                let _ = std::fs::write(local_data_file(&slug), app.to_json());
-                self.data   = app;
-                self.dav_ok = true;
-                return SyncStatus::Dav;
+        let dav1_configured = dav_full_url(&prof).is_some();
+        let dav2_configured = prof.has_dav2();
+
+        if dav1_configured || dav2_configured {
+            // Lire les marqueurs pour choisir la source la plus récente
+            let ts1 = if dav1_configured { dav_read_marker(&prof) } else { 0 };
+            let ts2 = if dav2_configured { dav_read_marker(&prof.as_dav2_profile()) } else { 0 };
+
+            // Essayer la source la plus récente en premier, fallback sur l'autre
+            let sources: Vec<&Profile>;
+            let p2 = prof.as_dav2_profile();
+            let ordered: Vec<&Profile> = if ts2 > ts1 && dav2_configured {
+                vec![&p2, &prof]
+            } else if dav1_configured {
+                vec![&prof, &p2]
+            } else {
+                vec![&p2]
+            };
+
+            // Filtrer selon ce qui est réellement configuré
+            sources = ordered.into_iter().filter(|p| dav_full_url(p).is_some()).collect();
+
+            for source in sources {
+                if let Some(mut app) = dav_load(source) {
+                    apply_recurring(&mut app);
+                    let dir = local_dir();
+                    let _ = std::fs::create_dir_all(&dir);
+                    let _ = std::fs::write(local_data_file(&slug), app.to_json());
+                    self.data   = app;
+                    self.dav_ok = true;
+                    return SyncStatus::Dav;
+                }
             }
         }
+
         self.dav_ok = false;
 
         let lf = local_data_file(&slug);
@@ -658,22 +819,42 @@ impl Storage {
         let json = self.data.to_json();
         let _ = std::fs::write(local_data_file(&slug), &json);
 
-        if dav_full_url(&prof).is_some() {
-            let data_clone = self.data.clone();
-            let prof_clone = prof.clone();
+        let dav1_configured = dav_full_url(&prof).is_some();
+        let dav2_configured = prof.has_dav2();
+
+        if dav1_configured || dav2_configured {
+            let ts = now_ts();
+            let data_clone  = self.data.clone();
+            let prof_clone  = prof.clone();
+
             std::thread::spawn(move || {
-                dav_save(&prof_clone, &data_clone);
+                // Push DAV1
+                if dav1_configured {
+                    if dav_save(&prof_clone, &data_clone) {
+                        dav_write_marker(&prof_clone, ts);
+                    }
+                }
+                // Push DAV2
+                if dav2_configured {
+                    let p2 = prof_clone.as_dav2_profile();
+                    if dav_save(&p2, &data_clone) {
+                        dav_write_marker(&p2, ts);
+                    }
+                }
             });
+
             self.dav_ok = true;
             return SyncStatus::Dav;
         }
+
         self.dav_ok = false;
         SyncStatus::Local
     }
 
     pub fn status(&self) -> SyncStatus {
         if self.dav_ok { return SyncStatus::Dav; }
-        if dav_full_url(self.active_profile()).is_some() {
+        let prof = self.active_profile();
+        if dav_full_url(prof).is_some() || prof.has_dav2() {
             return SyncStatus::DavError;
         }
         SyncStatus::Local
