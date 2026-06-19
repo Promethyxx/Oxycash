@@ -137,7 +137,11 @@ fn dav_filename(slug: &str) -> String {
 }
 
 fn dav_marker_filename(slug: &str) -> String {
+<<<<<<< HEAD
     format!("oxycash_{}.sync.json", slug)
+=======
+    format!("oxycash_{}.oxysync", slug)
+>>>>>>> 2d6172fe777cfcd39ca7e4ee67ffae6751ab6613
 }
 
 // --- Config I/O
@@ -594,7 +598,11 @@ fn now_ts() -> u64 {
         .as_secs()
 }
 
+<<<<<<< HEAD
 /// Lit le marqueur .sync.json d'un WebDAV. Retourne 0 si absent ou illisible.
+=======
+/// Lit le marqueur .oxysync d'un WebDAV. Retourne 0 si absent ou illisible.
+>>>>>>> 2d6172fe777cfcd39ca7e4ee67ffae6751ab6613
 fn dav_read_marker(profile: &Profile) -> u64 {
     let url = match dav_marker_url(profile) {
         Some(u) => u,
@@ -609,6 +617,7 @@ fn dav_read_marker(profile: &Profile) -> u64 {
         Ok(r) if r.status().is_success() => r,
         _ => return 0,
     };
+<<<<<<< HEAD
     let text = match resp.text() {
         Ok(t) => t,
         Err(_) => return 0,
@@ -621,6 +630,14 @@ fn dav_read_marker(profile: &Profile) -> u64 {
 }
 
 /// Écrit le marqueur .sync.json sur un WebDAV.
+=======
+    resp.text().ok()
+        .and_then(|t| t.trim().parse::<u64>().ok())
+        .unwrap_or(0)
+}
+
+/// Écrit le marqueur .oxysync sur un WebDAV.
+>>>>>>> 2d6172fe777cfcd39ca7e4ee67ffae6751ab6613
 fn dav_write_marker(profile: &Profile, ts: u64) -> bool {
     let url = match dav_marker_url(profile) {
         Some(u) => u,
@@ -631,6 +648,7 @@ fn dav_write_marker(profile: &Profile, ts: u64) -> bool {
         Err(_) => return false,
     };
     let auth = auth_header(&profile.dav_user, &profile.dav_pass);
+<<<<<<< HEAD
     let body = format!(
         "{{\"ts\":{},\"app\":\"Oxycash\",\"profile\":\"{}\"}}",
         ts, profile.slug
@@ -640,6 +658,13 @@ fn dav_write_marker(profile: &Profile, ts: u64) -> bool {
         .header("Authorization", &auth)
         .header("Content-Type", "application/json; charset=utf-8")
         .body(body)
+=======
+    match client
+        .put(&url)
+        .header("Authorization", &auth)
+        .header("Content-Type", "text/plain; charset=utf-8")
+        .body(ts.to_string())
+>>>>>>> 2d6172fe777cfcd39ca7e4ee67ffae6751ab6613
         .send()
     {
         Ok(r) => matches!(r.status().as_u16(), 200 | 201 | 204),
