@@ -3,7 +3,6 @@
 
 import { I18n } from "i18n.slint";
 import { Palette } from "palette.slint";
-import { I18n } from "i18n.slint";
 
 export struct ProfileItem {
     name: string,
@@ -135,10 +134,17 @@ export component SettingsView inherits Flickable {
     // Profiles
     in property <[ProfileItem]> profiles: [];
 
-    // WebDAV fields (two-way)
+    // WebDAV1 fields (two-way)
     in-out property <string> dav-url:  "";
     in-out property <string> dav-user: "";
     in-out property <string> dav-pass: "";
+
+    // WebDAV2 fields (two-way)
+    in-out property <string> dav2-url:     "";
+    in-out property <string> dav2-user:    "";
+    in-out property <string> dav2-pass:    "";
+    in-out property <bool>   dav2-enabled: false;
+    in property <string>     dav2-status:  "";
 
     // Currency field
     in-out property <string> currency-edit: "CHF";
@@ -151,6 +157,9 @@ export component SettingsView inherits Flickable {
     callback save-dav();
     callback test-dav();
     callback clear-dav();
+    callback save-dav2();
+    callback test-dav2();
+    callback clear-dav2();
     callback save-currency();
     callback do-export();
     callback do-import();
@@ -336,25 +345,81 @@ export component SettingsView inherits Flickable {
             }
         }
 
-        // ── WebDAV ───────────────────────────
+        // ── WebDAV primaire ──────────────────
         Card {
             title: I18n.cfg-webdav;
 
-            InputField { label-text: I18n.cfg-url; value <=> root.dav-url; }
-            InputField { label-text: I18n.cfg-user;   value <=> root.dav-user; }
-            InputField { label-text: I18n.cfg-password;   value <=> root.dav-pass; is-password: true; }
+            InputField { label-text: I18n.cfg-url;      value <=> root.dav-url; }
+            InputField { label-text: I18n.cfg-user;     value <=> root.dav-user; }
+            InputField { label-text: I18n.cfg-password; value <=> root.dav-pass; is-password: true; }
 
             HorizontalLayout {
                 spacing: 8px;
                 height: 36px;
 
                 ActionBtn { label: I18n.cfg-save;  bg-color: Palette.gold; text-color: #1a1a1a; clicked => { root.save-dav(); } }
-                ActionBtn { label: "Test";  bg-color: Palette.teal; text-color: #1a1a1a; clicked => { root.test-dav(); } }
-                ActionBtn { label: I18n.cfg-clear; bg-color: Palette.card; text-color: Palette.text2; clicked => { root.clear-dav(); } }
+                ActionBtn { label: "Test";          bg-color: Palette.teal; text-color: #1a1a1a; clicked => { root.test-dav(); } }
+                ActionBtn { label: I18n.cfg-clear;  bg-color: Palette.card; text-color: Palette.text2; clicked => { root.clear-dav(); } }
             }
 
             if dav-status != "" : Text {
                 text: dav-status;
+                font-size: 13px + Palette.font-offset;
+                color: Palette.text2;
+                wrap: word-wrap;
+            }
+        }
+
+        // ── WebDAV secondaire (optionnel) ────
+        Card {
+            title: "WebDAV 2 (optionnel)";
+
+            // Toggle enabled
+            Rectangle {
+                height: 36px;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: dav2-enabled ? Palette.teal : Palette.card-border;
+                background: dav2-enabled ? Palette.teal.with-alpha(0.13) : transparent;
+                TouchArea { clicked => { root.dav2-enabled = !root.dav2-enabled; } }
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 8px;
+
+                    Text {
+                        text: dav2-enabled ? "✓ Activé" : "Désactivé";
+                        font-size: 14px + Palette.font-offset;
+                        font-weight: 600;
+                        color: dav2-enabled ? Palette.teal : Palette.text3;
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: dav2-enabled ? "🟢" : "⚪";
+                        font-size: 16px + Palette.font-offset;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            InputField { label-text: I18n.cfg-url;      value <=> root.dav2-url; }
+            InputField { label-text: I18n.cfg-user;     value <=> root.dav2-user; }
+            InputField { label-text: I18n.cfg-password; value <=> root.dav2-pass; is-password: true; }
+
+            HorizontalLayout {
+                spacing: 8px;
+                height: 36px;
+
+                ActionBtn { label: I18n.cfg-save;  bg-color: Palette.gold; text-color: #1a1a1a; clicked => { root.save-dav2(); } }
+                ActionBtn { label: "Test";          bg-color: Palette.teal; text-color: #1a1a1a; clicked => { root.test-dav2(); } }
+                ActionBtn { label: I18n.cfg-clear;  bg-color: Palette.card; text-color: Palette.text2; clicked => { root.clear-dav2(); } }
+            }
+
+            if dav2-status != "" : Text {
+                text: dav2-status;
                 font-size: 13px + Palette.font-offset;
                 color: Palette.text2;
                 wrap: word-wrap;

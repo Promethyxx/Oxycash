@@ -24,7 +24,11 @@ struct AppState {
 impl AppState {
     fn new() -> Self {
         let mut storage = Storage::new();
-        storage.load();
+        let status = storage.load();
+        // Auto-connect : marquer dav_ok si le load a réussi via DAV
+        if status == SyncStatus::Dav {
+            storage.dav_ok = true;
+        }
         let current_month = detect_budget_month().to_string();
         Self {
             storage,
@@ -619,7 +623,6 @@ fn apply_theme(window: &AppWindow, is_dark: bool) {
     pal.set_purple(hex_color(p.purple));
 }
 
-
 // --- Push settings data to window
 fn push_settings(window: &AppWindow, state: &AppState) {
     let cfg = &state.storage.cfg;
@@ -635,9 +638,16 @@ fn push_settings(window: &AppWindow, state: &AppState) {
     window.set_settings_profiles(ModelRc::new(VecModel::from(items)));
 
     let prof = state.storage.active_profile();
+    // DAV1
     window.set_settings_dav_url(prof.dav_url.clone().into());
     window.set_settings_dav_user(prof.dav_user.clone().into());
     window.set_settings_dav_pass(prof.dav_pass.clone().into());
+    // DAV2
+    window.set_settings_dav2_url(prof.dav2_url.clone().into());
+    window.set_settings_dav2_user(prof.dav2_user.clone().into());
+    window.set_settings_dav2_pass(prof.dav2_pass.clone().into());
+    window.set_settings_dav2_enabled(prof.dav2_enabled);
+
     window.set_settings_currency_edit(cfg.currency.clone().into());
     window.set_profile_name(prof.name.clone().into());
     window.set_currency(cfg.currency.clone().into());
@@ -879,12 +889,10 @@ fn run() {
             let src_mi = MONTHS.iter().position(|&m| m == mk.as_str()).unwrap_or(0);
             let sec_key = match si as usize { 0 => "revenus", 1 => "retraits", 2 => "fixes", _ => "variables" };
 
-            // If deleted line still has recurring set, clean up to prevent re-propagation on restart
             let recurring_info = st.sec_lines(si as usize).get(li as usize)
                 .and_then(|l| l.recurring.as_ref().map(|r| (l.name.clone(), r.freq as usize, r.start.clone())));
             if let Some((name, old_freq, start)) = recurring_info {
                 let start_mi = MONTHS.iter().position(|&m| m == start.as_str()).unwrap_or(src_mi);
-                // Origin month: clear flag (keep historical data) if past, delete if future
                 if start_mi != src_mi {
                     let origin_key = MONTHS[start_mi].to_string();
                     if let Some(om) = st.storage.data.months.get_mut(&origin_key) {
@@ -896,7 +904,6 @@ fn run() {
                         }
                     }
                 }
-                // Propagated months: same rule — past=clear flag, future=delete
                 for step in 1..13 {
                     let target_mi = (start_mi + step * old_freq) % 12;
                     if target_mi == start_mi { break; }
@@ -988,28 +995,21 @@ fn run() {
             let src_mi = MONTHS.iter().position(|&m| m == mk.as_str()).unwrap_or(0);
 
             if freq <= 0 {
-                // Disable: remove recurring flag and delete propagated entries
                 let line = &st.sec_lines(si as usize)[li as usize];
                 let name = line.name.clone();
                 let old_freq = line.recurring.as_ref().map(|r| r.freq as usize).unwrap_or(3);
                 let start = line.recurring.as_ref().map(|r| r.start.clone()).unwrap_or(mk.clone());
                 let sec_key = match si as usize { 0 => "revenus", 1 => "retraits", 2 => "fixes", _ => "variables" };
-
-                // Start from origin month so we don't miss the source entry when disabling
-                // from a propagated copy (original code used src_mi and skipped past months)
                 let start_mi = MONTHS.iter().position(|&m| m == start.as_str()).unwrap_or(src_mi);
 
-                // Remove recurring flag on current line
                 let line = &mut st.sec_lines_mut(si as usize)[li as usize];
                 line.recurring = None;
 
-                // Clean origin entry if it lives in a different month than current
                 if start_mi != src_mi {
                     let origin_key = MONTHS[start_mi].to_string();
                     if let Some(om) = st.storage.data.months.get_mut(&origin_key) {
                         let sec = om.section_mut(sec_key);
                         if !include_past && start_mi < src_mi {
-                            // Past month: preserve historical data, just clear the flag
                             for l in sec.iter_mut() { if l.name == name { l.recurring = None; } }
                         } else {
                             sec.retain(|l| !(l.name == name && l.recurring.is_some()));
@@ -1017,58 +1017,47 @@ fn run() {
                     }
                 }
 
-                // Clean all propagated months (loop from origin to avoid missing past copies)
                 for step in 1..13 {
                     let target_mi = (start_mi + step * old_freq) % 12;
                     if target_mi == start_mi { break; }
-                    if target_mi == src_mi { continue; } // current line already handled above
-
+                    if target_mi == src_mi { continue; }
                     let target_key = MONTHS[target_mi].to_string();
                     if let Some(target_month) = st.storage.data.months.get_mut(&target_key) {
                         let sec = target_month.section_mut(sec_key);
                         if !include_past && target_mi < src_mi {
-                            // Past month: keep entry but clear recurring flag
                             for l in sec.iter_mut() { if l.name == name { l.recurring = None; } }
                         } else {
-                            // Future month: delete the propagated entry
                             sec.retain(|l| !(l.name == name && l.recurring.is_some()));
                         }
                     }
                 }
             } else {
-                // Get source line amounts
                 let line = &st.sec_lines(si as usize)[li as usize];
                 let banque = line.banque;
                 let cash = line.cash;
                 let name = line.name.clone();
                 let sec_key = match si as usize { 0 => "revenus", 1 => "retraits", 2 => "fixes", _ => "variables" };
 
-                // Set recurring on source
                 let line = &mut st.sec_lines_mut(si as usize)[li as usize];
                 line.recurring = Some(Recurring {
                     freq: freq as u32,
                     start: mk.clone(),
                 });
 
-                // Propagate to target months
                 let f = freq as usize;
                 for step in 1..13 {
                     let target_mi = (src_mi + step * f) % 12;
                     if target_mi == src_mi { break; }
-
-                    // Skip past months unless checkbox checked
                     if !include_past && target_mi < src_mi { continue; }
 
                     let target_key = MONTHS[target_mi].to_string();
                     if let Some(target_month) = st.storage.data.months.get_mut(&target_key) {
                         let sec = target_month.section_mut(sec_key);
                         if let Some(existing) = sec.iter_mut().find(|l| l.name == name) {
-                            // Overwrite amounts
                             existing.banque = banque;
                             existing.cash = cash;
                             existing.recurring = Some(Recurring { freq: freq as u32, start: mk.clone() });
                         } else {
-                            // Create new
                             sec.push(Line {
                                 name: name.clone(),
                                 banque, cash,
@@ -1425,7 +1414,6 @@ fn run() {
             let cols = &vc.colonnes;
             if cols.is_empty() { return; }
 
-            // Start from base values in colonnes
             let base: Vec<f64> = cols.iter().map(|c| c.valeur).collect();
             let mut paliers = vec![];
             for step in 0..n {
@@ -1471,7 +1459,6 @@ fn run() {
                 name: "New".into(), valeur: 0.0, is_income: false,
                 delta_type: "fixed".into(), delta_val: 0.0,
             });
-            // Extend existing paliers
             for p in &mut st.storage.data.viabilite.paliers {
                 p.valeurs.push(0.0);
             }
@@ -1533,7 +1520,7 @@ fn run() {
 
     // ── Settings callbacks ─────────────────────────────────────────────
 
-    // Save WebDAV config
+    // Save WebDAV1 config
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
@@ -1551,7 +1538,7 @@ fn run() {
         });
     }
 
-    // Test WebDAV
+    // Test WebDAV1
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
@@ -1582,27 +1569,20 @@ fn run() {
             }
 
             std::thread::spawn(move || {
-                // 1. build client
                 let client = match storage::make_client() {
                     Ok(c) => c,
-                    Err(e) => {
-                        step!(ww3, format!("1/4 FAIL client: {}", e));
-                        return;
-                    }
+                    Err(e) => { step!(ww3, format!("1/4 FAIL client: {}", e)); return; }
                 };
                 step!(ww3, "2/4 TCP 1.1.1.1…");
 
-                // 2. réseau basique sans DNS
                 if let Err(e) = std::net::TcpStream::connect_timeout(
                     &"1.1.1.1:443".parse().unwrap(),
                     std::time::Duration::from_secs(4),
                 ) {
-                    step!(ww3, format!("2/4 FAIL réseau: {}", e));
-                    return;
+                    step!(ww3, format!("2/4 FAIL réseau: {}", e)); return;
                 }
                 step!(ww3, "3/4 DNS…");
 
-                // 3. DNS
                 let host = {
                     let url2 = profile.dav_url.trim().to_string();
                     let s = url2.strip_prefix("https://").or_else(|| url2.strip_prefix("http://")).unwrap_or(&url2).to_string();
@@ -1623,7 +1603,6 @@ fn run() {
                 };
                 step!(ww3, format!("4/4 HTTPS {} → {}…", host, ip));
 
-                // 4. requête HTTPS
                 let (ok, msg) = storage::dav_test_http(&profile, client);
                 let msg2 = msg.clone();
                 let _ = slint::invoke_from_event_loop(move || {
@@ -1645,7 +1624,7 @@ fn run() {
         });
     }
 
-    // Clear WebDAV
+    // Clear WebDAV1
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
@@ -1661,6 +1640,129 @@ fn run() {
             w.set_settings_dav_status("Config cleared".into());
             w.set_sync_status(status_str(st.storage.status()).into());
             show_toast(&w, "Config cleared");
+        });
+    }
+
+    // Save WebDAV2 config
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_save_dav2(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let url: String     = w.get_settings_dav2_url().into();
+            let user: String    = w.get_settings_dav2_user().into();
+            let pass: String    = w.get_settings_dav2_pass().into();
+            let enabled: bool   = w.get_settings_dav2_enabled();
+            let slug = st.storage.cfg.active.clone();
+            st.storage.save_profile_dav2(&slug, &url, &user, &pass, enabled);
+            w.set_settings_dav2_status("Config saved ✓".into());
+            show_toast(&w, "WebDAV2 saved");
+        });
+    }
+
+    // Test WebDAV2
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_test_dav2(move || {
+            let ww2 = ww.clone();
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let url: String     = w.get_settings_dav2_url().into();
+            let user: String    = w.get_settings_dav2_user().into();
+            let pass: String    = w.get_settings_dav2_pass().into();
+            let enabled: bool   = w.get_settings_dav2_enabled();
+            let slug = st.storage.cfg.active.clone();
+            st.storage.save_profile_dav2(&slug, &url, &user, &pass, enabled);
+            // Construire un profil temporaire avec les crédentials DAV2 en position primaire
+            let profile = st.storage.active_profile().as_dav2_profile();
+            drop(st);
+            w.set_settings_dav2_status("1/4 init client…".into());
+
+            let state_ref2 = state_ref.clone();
+            let ww3 = ww2.clone();
+
+            macro_rules! step {
+                ($ww:expr, $msg:expr) => {{
+                    let ww_ = $ww.clone();
+                    let msg_ = $msg.to_string();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(w) = ww_.upgrade() { w.set_settings_dav2_status(msg_.into()); }
+                    });
+                }};
+            }
+
+            std::thread::spawn(move || {
+                let client = match storage::make_client() {
+                    Ok(c) => c,
+                    Err(e) => { step!(ww3, format!("1/4 FAIL client: {}", e)); return; }
+                };
+                step!(ww3, "2/4 TCP 1.1.1.1…");
+
+                if let Err(e) = std::net::TcpStream::connect_timeout(
+                    &"1.1.1.1:443".parse().unwrap(),
+                    std::time::Duration::from_secs(4),
+                ) {
+                    step!(ww3, format!("2/4 FAIL réseau: {}", e)); return;
+                }
+                step!(ww3, "3/4 DNS…");
+
+                let host = {
+                    let url2 = profile.dav_url.trim().to_string();
+                    let s = url2.strip_prefix("https://").or_else(|| url2.strip_prefix("http://")).unwrap_or(&url2).to_string();
+                    s[..s.find('/').unwrap_or(s.len())].to_string()
+                };
+                let (tx2, rx2) = std::sync::mpsc::channel();
+                let host2 = host.clone();
+                std::thread::spawn(move || {
+                    let r = std::net::ToSocketAddrs::to_socket_addrs(&(host2.as_str(), 443u16))
+                        .map(|mut it| it.next().map(|a| a.ip().to_string()));
+                    let _ = tx2.send(r);
+                });
+                let ip = match rx2.recv_timeout(std::time::Duration::from_secs(6)) {
+                    Ok(Ok(Some(ip))) => ip,
+                    Ok(Ok(None))     => { step!(ww3, format!("3/4 FAIL DNS vide: {}", host)); return; }
+                    Ok(Err(e))       => { step!(ww3, format!("3/4 FAIL DNS: {}", e)); return; }
+                    Err(_)           => { step!(ww3, "3/4 FAIL DNS timeout 6s".to_string()); return; }
+                };
+                step!(ww3, format!("4/4 HTTPS {} → {}…", host, ip));
+
+                let (ok, msg) = storage::dav_test_http(&profile, client);
+                let msg2 = msg.clone();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(w) = ww3.upgrade() {
+                        w.set_settings_dav2_status(format!("4/4 {}", msg2).into());
+                    }
+                });
+                let _ = slint::invoke_from_event_loop(move || {
+                    let st = state_ref2.lock().unwrap();
+                    let status = status_str(st.storage.status()).to_string();
+                    drop(st);
+                    if let Some(w) = ww2.upgrade() {
+                        w.set_sync_status(status.into());
+                        show_toast(&w, &msg);
+                    }
+                });
+            });
+        });
+    }
+
+    // Clear WebDAV2
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_clear_dav2(move || {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let slug = st.storage.cfg.active.clone();
+            st.storage.save_profile_dav2(&slug, "", "", "", false);
+            w.set_settings_dav2_url("".into());
+            w.set_settings_dav2_user("".into());
+            w.set_settings_dav2_pass("".into());
+            w.set_settings_dav2_enabled(false);
+            w.set_settings_dav2_status("Config cleared".into());
+            show_toast(&w, "WebDAV2 cleared");
         });
     }
 
@@ -1686,7 +1788,7 @@ fn run() {
             let w = ww.unwrap();
             let st = state_ref.lock().unwrap();
             let json = st.storage.export_json();
-            let fname = format!("oxycash-{}.json", model::today());
+            let fname = format!("oxycash_{}.json", st.storage.cfg.active);
             drop(st);
             #[cfg(not(target_os = "android"))]
             {

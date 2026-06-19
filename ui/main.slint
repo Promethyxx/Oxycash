@@ -4,8 +4,6 @@ import { Palette }      from "palette.slint";
 import { I18n }         from "i18n.slint";
 export { Palette }
 export { I18n }
-import { I18n }         from "i18n.slint";
-import { I18n }         from "i18n.slint";
 import { MonthView, LineItem, PaymentItem, RegisterEntry } from "month_view.slint";
 import { SettingsView, ProfileItem } from "settings.slint";
 import { ChartsView }   from "charts_view.slint";
@@ -179,6 +177,13 @@ export component AppWindow inherits Window {
     in-out property <string>    settings-dav-url:   "";
     in-out property <string>    settings-dav-user:  "";
     in-out property <string>    settings-dav-pass:  "";
+    // WebDAV2
+    in property <string>        settings-dav2-status: "";
+    in-out property <string>    settings-dav2-url:    "";
+    in-out property <string>    settings-dav2-user:   "";
+    in-out property <string>    settings-dav2-pass:   "";
+    in-out property <bool>      settings-dav2-enabled: false;
+
     in-out property <string>    settings-currency-edit: "CHF";
 
     callback tab-changed(Tab);
@@ -221,6 +226,9 @@ export component AppWindow inherits Window {
     callback save-dav();
     callback test-dav();
     callback clear-dav();
+    callback save-dav2();
+    callback test-dav2();
+    callback clear-dav2();
     callback save-currency();
     callback do-export();
     callback do-import();
@@ -233,15 +241,6 @@ export component AppWindow inherits Window {
     callback do-export-csv();
     callback do-export-ofx();
     callback set-hash-storage(string);
-
-    // Toast overlay — outside the main layout, positioned absolutely
-    Toast {
-        message: toast-message;
-        show:    toast-show;
-        width:   240px;
-        x:       (parent.width - self.width) / 2;
-        y:       parent.height - 60px;
-    }
 
     VerticalLayout {
         spacing: 0px;
@@ -488,6 +487,11 @@ export component AppWindow inherits Window {
                 dav-url   <=>  settings-dav-url;
                 dav-user  <=>  settings-dav-user;
                 dav-pass  <=>  settings-dav-pass;
+                dav2-status:   settings-dav2-status;
+                dav2-url  <=>  settings-dav2-url;
+                dav2-user <=>  settings-dav2-user;
+                dav2-pass <=>  settings-dav2-pass;
+                dav2-enabled <=> settings-dav2-enabled;
                 currency-edit <=> settings-currency-edit;
                 hash-storage-mode: hash-storage-mode;
                 hash-file-path:    hash-file-path;
@@ -495,6 +499,9 @@ export component AppWindow inherits Window {
                 save-dav           => { root.save-dav(); }
                 test-dav           => { root.test-dav(); }
                 clear-dav          => { root.clear-dav(); }
+                save-dav2          => { root.save-dav2(); }
+                test-dav2          => { root.test-dav2(); }
+                clear-dav2         => { root.clear-dav2(); }
                 save-currency      => { root.save-currency(); }
                 do-export          => { root.do-export(); }
                 do-import          => { root.do-import(); }
@@ -509,5 +516,14 @@ export component AppWindow inherits Window {
                 set-hash-storage(m) => { root.set-hash-storage(m); }
             }
         }
+    }
+
+    // Toast overlay — superposé en bas, hors du flux layout
+    Toast {
+        message: toast-message;
+        show:    toast-show;
+        width:   240px;
+        x:       (parent.width - self.width) / 2;
+        y:       parent.height - 60px;
     }
 }
