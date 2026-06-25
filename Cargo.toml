@@ -1,6 +1,6 @@
 [package]
 name = "Oxycash"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2024"
 
 [features]
@@ -28,18 +28,18 @@ tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 # --- Desktop (Windows + Linux) ---
 [target.'cfg(not(target_os = "android"))'.dependencies]
 rfd   = "0.17"
-slint = { version = "1.15", features = ["backend-winit", "renderer-femtovg"] }
+slint = { version = "1.17", features = ["backend-winit", "renderer-femtovg"] }
 
 # --- Android ---
 [target.'cfg(target_os = "android")'.dependencies]
-slint                    = { version = "1.15", features = ["backend-android-activity-06", "renderer-skia"] }
+slint                    = { version = "1.17", features = ["backend-android-activity-06", "renderer-skia"] }
 android-activity         = { version = "0.6.1", features = ["native-activity"] }
 webpki-roots             = "1"
 rustls                   = { version = "0.23", features = ["aws_lc_rs"] }
 
 # --- Build deps ---
 [build-dependencies]
-slint-build = "1.15"
+slint-build = "1.17"
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 winresource = "0.1"

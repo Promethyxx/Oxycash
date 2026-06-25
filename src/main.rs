@@ -651,8 +651,12 @@ fn push_settings(window: &AppWindow, state: &AppState) {
     window.set_settings_currency_edit(cfg.currency.clone().into());
     window.set_profile_name(prof.name.clone().into());
     window.set_currency(cfg.currency.clone().into());
-    window.set_hash_storage_mode(cfg.hash_storage.clone().into());
-    window.set_hash_file_path(state.storage.hash_file_location().into());
+    // Backup
+    window.set_settings_backup_local(cfg.backup_local);
+    window.set_settings_backup_webdav(cfg.backup_webdav);
+    window.set_settings_data_dir_display(state.storage.data_dir_display().into());
+    window.set_settings_backup_dir_display(state.storage.backup_dir_display().into());
+    window.set_settings_data_dir_edit(cfg.data_dir.clone().into());
 }
 
 // --- Push i18n strings to I18n global
@@ -1934,147 +1938,52 @@ fn run() {
         });
     }
 
-    // Import relevé CSV
+    // Backup local toggle
     {
         let state_ref = state.clone();
         let ww = window.as_weak();
-        window.on_do_import_csv(move || {
-            let w = ww.unwrap();
-            #[cfg(not(target_os = "android"))]
-            {
-                let path = rfd::FileDialog::new()
-                    .add_filter("CSV", &["csv", "txt"])
-                    .pick_file();
-                if let Some(p) = path {
-                    match std::fs::read_to_string(&p) {
-                        Ok(raw) => {
-                            let mut st = state_ref.lock().unwrap();
-                            let month_key = st.current_month.clone();
-                            let (inserted, skipped) = st.storage.import_statement_csv(&raw, &month_key);
-                            push_month(&w, &st);
-                            show_toast(&w, &format!("CSV: {} ajoutées, {} ignorées", inserted, skipped));
-                        }
-                        Err(e) => show_toast(&w, &format!("Erreur: {}", e)),
-                    }
-                }
-            }
-            #[cfg(target_os = "android")]
-            show_toast(&w, "Import CSV non disponible sur Android");
-        });
-    }
-
-    // Import relevé OFX
-    {
-        let state_ref = state.clone();
-        let ww = window.as_weak();
-        window.on_do_import_ofx(move || {
-            let w = ww.unwrap();
-            #[cfg(not(target_os = "android"))]
-            {
-                let path = rfd::FileDialog::new()
-                    .add_filter("OFX / QFX", &["ofx", "qfx"])
-                    .pick_file();
-                if let Some(p) = path {
-                    match std::fs::read_to_string(&p) {
-                        Ok(raw) => {
-                            let mut st = state_ref.lock().unwrap();
-                            let month_key = st.current_month.clone();
-                            let (inserted, skipped) = st.storage.import_statement_ofx(&raw, &month_key);
-                            push_month(&w, &st);
-                            show_toast(&w, &format!("OFX: {} ajoutées, {} ignorées", inserted, skipped));
-                        }
-                        Err(e) => show_toast(&w, &format!("Erreur: {}", e)),
-                    }
-                }
-            }
-            #[cfg(target_os = "android")]
-            show_toast(&w, "Import OFX non disponible sur Android");
-        });
-    }
-
-    // Export CSV mois courant
-    {
-        let state_ref = state.clone();
-        let ww = window.as_weak();
-        window.on_do_export_csv(move || {
-            let w = ww.unwrap();
-            let st = state_ref.lock().unwrap();
-            let month_key = st.current_month.clone();
-            let csv = st.storage.export_statement_csv(&month_key);
-            let fname = format!("oxycash-{}-{}.csv", month_key.to_lowercase(), model::today());
-            drop(st);
-            #[cfg(not(target_os = "android"))]
-            {
-                let path = rfd::FileDialog::new()
-                    .set_file_name(&fname)
-                    .add_filter("CSV", &["csv"])
-                    .save_file();
-                if let Some(p) = path {
-                    match std::fs::write(&p, &csv) {
-                        Ok(_) => show_toast(&w, "Export CSV ✓"),
-                        Err(e) => show_toast(&w, &format!("Erreur: {}", e)),
-                    }
-                }
-            }
-            #[cfg(target_os = "android")]
-            {
-                let dir = dirs::data_local_dir().unwrap_or_default();
-                let path = dir.join(&fname);
-                match std::fs::write(&path, &csv) {
-                    Ok(_) => show_toast(&w, "Export CSV ✓"),
-                    Err(e) => show_toast(&w, &format!("Erreur: {}", e)),
-                }
-            }
-        });
-    }
-
-    // Export OFX mois courant
-    {
-        let state_ref = state.clone();
-        let ww = window.as_weak();
-        window.on_do_export_ofx(move || {
-            let w = ww.unwrap();
-            let st = state_ref.lock().unwrap();
-            let month_key = st.current_month.clone();
-            let ofx = st.storage.export_statement_ofx(&month_key);
-            let fname = format!("oxycash-{}-{}.ofx", month_key.to_lowercase(), model::today());
-            drop(st);
-            #[cfg(not(target_os = "android"))]
-            {
-                let path = rfd::FileDialog::new()
-                    .set_file_name(&fname)
-                    .add_filter("OFX", &["ofx"])
-                    .save_file();
-                if let Some(p) = path {
-                    match std::fs::write(&p, &ofx) {
-                        Ok(_) => show_toast(&w, "Export OFX ✓"),
-                        Err(e) => show_toast(&w, &format!("Erreur: {}", e)),
-                    }
-                }
-            }
-            #[cfg(target_os = "android")]
-            {
-                let dir = dirs::data_local_dir().unwrap_or_default();
-                let path = dir.join(&fname);
-                match std::fs::write(&path, &ofx) {
-                    Ok(_) => show_toast(&w, "Export OFX ✓"),
-                    Err(e) => show_toast(&w, &format!("Erreur: {}", e)),
-                }
-            }
-        });
-    }
-
-    // Hash storage mode
-    {
-        let state_ref = state.clone();
-        let ww = window.as_weak();
-        window.on_set_hash_storage(move |mode| {
+        window.on_set_backup_local(move |val| {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
-            let m: String = mode.into();
-            st.storage.set_hash_storage(&m);
-            w.set_hash_storage_mode(st.storage.cfg.hash_storage.clone().into());
-            w.set_hash_file_path(st.storage.hash_file_location().into());
+            st.storage.set_backup_local(val);
+            w.set_settings_backup_local(val);
+        });
+    }
+
+    // Backup WebDAV toggle
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_set_backup_webdav(move |val| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            st.storage.set_backup_webdav(val);
+            w.set_settings_backup_webdav(val);
+        });
+    }
+
+    // Set data dir
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_set_data_dir(move |path| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let p: String = path.into();
+            st.storage.set_data_dir(&p);
+            w.set_settings_data_dir_display(st.storage.data_dir_display().into());
+            w.set_settings_backup_dir_display(st.storage.backup_dir_display().into());
+            show_toast(&w, "Dossier sauvegardé ✓");
+        });
+    }
+
+    // Backup à la fermeture
+    {
+        let state_ref = state.clone();
+        window.window().on_close_requested(move || {
+            let st = state_ref.lock().unwrap();
+            st.storage.backup_on_exit();
+            slint::CloseRequestResponse::HideWindow
         });
     }
 
