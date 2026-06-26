@@ -239,6 +239,7 @@ export component AppWindow inherits Window {
     callback switch-profile(int);
     callback delete-profile(int);
     callback add-profile(string);
+    callback rename-profile(string);
     callback set-backup-local(bool);
     callback set-backup-webdav(bool);
     callback set-data-dir(string);
@@ -513,6 +514,7 @@ export component AppWindow inherits Window {
                 switch-profile(i)  => { root.switch-profile(i); }
                 delete-profile(i)  => { root.delete-profile(i); }
                 add-profile(name)  => { root.add-profile(name); }
+                rename-profile(n)  => { root.rename-profile(n); }
                 set-backup-local(v)  => { root.set-backup-local(v); }
                 set-backup-webdav(v) => { root.set-backup-webdav(v); }
                 set-data-dir(p)      => { root.set-data-dir(p); }

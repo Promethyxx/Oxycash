@@ -379,6 +379,22 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
         });
     }
 
+    // Rename profile
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_rename_profile(move |new_name| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let n: String = new_name.into();
+            let slug = st.storage.cfg.active.clone();
+            st.storage.rename_profile(&slug, &n);
+            w.set_profile_name(st.storage.active_profile().name.clone().into());
+            push_settings(&w, &st);
+            show_toast(&w, "Profile renamed");
+        });
+    }
+
     // ── Backup / Data dir ─────────────────────────────────────────────────────
 
     {

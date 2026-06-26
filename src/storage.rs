@@ -73,6 +73,16 @@ impl Storage {
         save_config(&self.cfg);
     }
 
+    /// Rename the display name of a profile (slug and data file are unchanged).
+    pub fn rename_profile(&mut self, slug: &str, new_name: &str) {
+        let new_name = new_name.trim();
+        if new_name.is_empty() { return; }
+        if let Some(p) = self.cfg.profiles.iter_mut().find(|p| p.slug == slug) {
+            p.name = new_name.to_string();
+        }
+        save_config(&self.cfg);
+    }
+
     pub fn switch_profile(&mut self, slug: &str) {
         self.cfg.active = slug.to_string();
         save_config(&self.cfg);

@@ -190,6 +190,7 @@ export component SettingsView inherits Flickable {
     callback switch-profile(int);
     callback delete-profile(int);
     callback add-profile(string);
+    callback rename-profile(string);
     callback set-backup-local(bool);
     callback set-backup-webdav(bool);
     callback set-data-dir(string);
@@ -226,12 +227,36 @@ export component SettingsView inherits Flickable {
                         y: (parent.height - self.height) / 2;
                     }
 
-                    Text {
+                    // Nom : texte statique pour les profils inactifs,
+                    // champ éditable pour le profil actif
+                    if !prof.active : Text {
                         text: prof.name;
                         font-size: 14px + Palette.font-offset;
-                        color: Palette.text;
+                        color: Palette.text2;
                         horizontal-stretch: 1;
                         vertical-alignment: center;
+                    }
+                    if prof.active : Rectangle {
+                        horizontal-stretch: 1;
+                        height: 28px;
+                        border-radius: 6px;
+                        border-width: 1px;
+                        border-color: rename-input.has-focus ? Palette.teal : transparent;
+                        background: rename-input.has-focus ? Palette.card : transparent;
+                        animate border-color { duration: 120ms; }
+                        rename-input := TextInput {
+                            x: 4px; width: parent.width - 8px; height: parent.height;
+                            font-size: 14px + Palette.font-offset;
+                            font-weight: 600;
+                            color: Palette.text;
+                            vertical-alignment: center;
+                            init => { self.text = prof.name; }
+                            accepted => {
+                                if self.text != "" {
+                                    root.rename-profile(self.text);
+                                }
+                            }
+                        }
                     }
 
                     Rectangle {
