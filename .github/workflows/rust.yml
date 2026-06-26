@@ -31,7 +31,7 @@ jobs:
       with:
         targets: ${{ matrix.target }}
     - name: Cache Cargo
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.cargo/registry
@@ -58,7 +58,7 @@ jobs:
         cp target/${{ matrix.target }}/release/Oxycash ${{ matrix.artifact_name }}
         chmod +x ${{ matrix.artifact_name }}
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: binary-${{ matrix.label }}
         path: ${{ matrix.artifact_name }}
