@@ -9,8 +9,8 @@ use crate::config::{
     load_config, save_config, slugify, backup_local,
 };
 use crate::webdav::{
-    backup_dav_upload, dav_load, dav_read_marker, dav_save, dav_test_http,
-    dav_write_marker, make_client, now_ts,
+    dav_backup_upload, dav_connect, dav_read_marker, dav_save, dav_test_http,
+    dav_write_marker, make_client, now_ts, ConnectResult,
 };
 use crate::model::{AppData, apply_recurring};
 
@@ -98,7 +98,7 @@ impl Storage {
 
     pub fn test_dav(&self) -> (bool, String) {
         match make_client() {
-            Ok(c) => dav_test_http(self.active_profile(), c),
+            Ok(c)  => dav_test_http(self.active_profile(), c),
             Err(e) => (false, e),
         }
     }
@@ -107,7 +107,7 @@ impl Storage {
         let prof = self.active_profile();
         if !prof.has_dav2() { return (false, "WebDAV secondaire non configuré".into()); }
         match make_client() {
-            Ok(c) => dav_test_http(&prof.as_dav2_profile(), c),
+            Ok(c)  => dav_test_http(&prof.as_dav2_profile(), c),
             Err(e) => (false, e),
         }
     }
@@ -116,6 +116,7 @@ impl Storage {
 
     /// Load data for the active profile.
     /// Strategy: if any DAV is configured, pick the source with the most-recent sync marker,
+    /// run the full connection sequence (ensure dirs → load or first-push),
     /// fall back to local file, fall back to empty data.
     pub fn load(&mut self) -> SyncStatus {
         let prof = self.active_profile().clone();
@@ -124,48 +125,53 @@ impl Storage {
         let dav2 = prof.has_dav2();
 
         if dav1 || dav2 {
+            // Arbitrate which source is more recent via sync marker
             let ts1 = if dav1 { dav_read_marker(&prof) } else { 0 };
             let ts2 = if dav2 { dav_read_marker(&prof.as_dav2_profile()) } else { 0 };
-            let p2 = prof.as_dav2_profile();
+            let p2  = prof.as_dav2_profile();
 
-            // Prefer the source with the newer marker; fall back to DAV1
-            let ordered: Vec<&Profile> = if ts2 > ts1 && dav2 { vec![&p2, &prof] }
+            let sources: Vec<&Profile> = if ts2 > ts1 && dav2 { vec![&p2, &prof] }
                                          else if dav1          { vec![&prof, &p2] }
                                          else                  { vec![&p2] };
 
-            for source in ordered.into_iter().filter(|p| crate::webdav::dav_full_url(p).is_some()) {
-                if let Some(mut app) = dav_load(source, &self.cfg) {
-                    apply_recurring(&mut app);
-                    let dir = base_dir(&self.cfg);
-                    let _ = std::fs::create_dir_all(&dir);
-                    let _ = std::fs::write(local_data_file(&self.cfg, &slug), app.to_json());
-                    self.data = app;
-                    self.dav_ok = true;
-                    return SyncStatus::Dav;
-                } else {
-                    // 404 — remote directory may be missing; ensure it and push local data
-                    let client = match make_client() { Ok(c) => c, Err(_) => continue };
-                    if crate::webdav::dav_ensure_dir(source, &client, &self.cfg).is_ok() {
-                        let lf = local_data_file(&self.cfg, &slug);
-                        let data_to_push = if lf.exists() {
-                            std::fs::read_to_string(&lf).ok()
-                                .and_then(|t| AppData::from_json(&t).ok())
-                                .unwrap_or_else(AppData::new_empty)
-                        } else {
-                            AppData::new_empty()
-                        };
-                        if dav_save(source, &data_to_push, &self.cfg) {
-                            crate::webdav::log_dav(&self.cfg, "first push OK — connected");
-                            apply_recurring(&mut self.data);
-                            self.dav_ok = true;
-                            return SyncStatus::Dav;
+            // Get current local JSON to use as first-push payload if remote is absent
+            let lf         = local_data_file(&self.cfg, &slug);
+            let local_json = std::fs::read_to_string(&lf).unwrap_or_else(|_| {
+                AppData::new_empty().to_json()
+            });
+
+            for source in sources.into_iter().filter(|p| p.has_dav()) {
+                match dav_connect(source, &local_json, &self.cfg) {
+                    ConnectResult::Loaded(mut app) => {
+                        apply_recurring(&mut app);
+                        // Mirror to local file
+                        let dir = base_dir(&self.cfg);
+                        let _ = std::fs::create_dir_all(&dir);
+                        let _ = std::fs::write(&lf, app.to_json());
+                        self.data  = app;
+                        self.dav_ok = true;
+                        return SyncStatus::Dav;
+                    }
+                    ConnectResult::Pushed => {
+                        // Remote was empty, local data is now there — load local
+                        if let Ok(text) = std::fs::read_to_string(&lf) {
+                            if let Ok(mut app) = AppData::from_json(&text) {
+                                apply_recurring(&mut app);
+                                self.data = app;
+                            }
                         }
+                        self.dav_ok = true;
+                        return SyncStatus::Dav;
+                    }
+                    ConnectResult::Failed(_) => {
+                        // Try next source
+                        continue;
                     }
                 }
             }
         }
 
-        // DAV unavailable — load from local file
+        // DAV unavailable — fall back to local file
         self.dav_ok = false;
         let lf = local_data_file(&self.cfg, &slug);
         if lf.exists() {
@@ -190,39 +196,44 @@ impl Storage {
     // ── Save ──────────────────────────────────────────────────────────────────
 
     /// Save data for the active profile.
-    /// Always writes locally first; DAV upload happens asynchronously if configured.
+    /// Always writes locally first; DAV save + backup happen asynchronously if configured.
     pub fn save(&mut self) -> SyncStatus {
         let prof = self.active_profile().clone();
         let slug = prof.slug.clone();
         let json = self.data.to_json();
 
+        // Always write local copy first
         let dir = base_dir(&self.cfg);
         let _ = std::fs::create_dir_all(&dir);
         let _ = std::fs::write(local_data_file(&self.cfg, &slug), &json);
 
-        let dav1 = prof.has_dav();
-        let dav2 = prof.has_dav2();
+        let dav1        = prof.has_dav();
+        let dav2        = prof.has_dav2();
+        let backup_webdav = self.cfg.backup_webdav;
 
         if dav1 || dav2 {
-            let ts          = now_ts();
-            let json_clone  = json.clone();
-            let prof_clone  = prof.clone();
-            let backup_dav  = self.cfg.backup_webdav;
-            let slug_clone  = slug.clone();
-            let cfg_clone   = self.cfg.clone();
+            let ts         = now_ts();
+            let json_clone = json.clone();
+            let prof_clone = prof.clone();
+            let slug_clone = slug.clone();
+            let cfg_clone  = self.cfg.clone();
 
             std::thread::spawn(move || {
                 if dav1 {
                     if dav_save(&prof_clone, &AppData::from_json(&json_clone).unwrap_or_default(), &cfg_clone) {
                         dav_write_marker(&prof_clone, ts);
-                        if backup_dav { backup_dav_upload(&prof_clone, &slug_clone, &json_clone); }
+                        if backup_webdav {
+                            dav_backup_upload(&prof_clone, &slug_clone, &json_clone, &cfg_clone);
+                        }
                     }
                 }
                 if dav2 {
                     let p2 = prof_clone.as_dav2_profile();
                     if dav_save(&p2, &AppData::from_json(&json_clone).unwrap_or_default(), &cfg_clone) {
                         dav_write_marker(&p2, ts);
-                        if backup_dav { backup_dav_upload(&p2, &slug_clone, &json_clone); }
+                        if backup_webdav {
+                            dav_backup_upload(&p2, &slug_clone, &json_clone, &cfg_clone);
+                        }
                     }
                 }
             });
@@ -237,19 +248,16 @@ impl Storage {
 
     // ── Exit backup ───────────────────────────────────────────────────────────
 
-    /// Write a local backup and optionally a DAV backup on application close.
+    /// Write a local backup and a DAV backup on application close.
+    /// Runs synchronously — the app closes only after both are done.
     pub fn backup_on_exit(&self) {
         let slug = self.active_profile().slug.clone();
         let json = self.data.to_json();
         backup_local(&self.cfg, &slug, &json);
         if self.cfg.backup_webdav {
-            let prof  = self.active_profile().clone();
-            let json2 = json.clone();
-            let slug2 = slug.clone();
-            std::thread::spawn(move || {
-                if prof.has_dav()  { backup_dav_upload(&prof, &slug2, &json2); }
-                if prof.has_dav2() { backup_dav_upload(&prof.as_dav2_profile(), &slug2, &json2); }
-            });
+            let prof = self.active_profile();
+            if prof.has_dav()  { dav_backup_upload(&prof,                   &slug, &json, &self.cfg); }
+            if prof.has_dav2() { dav_backup_upload(&prof.as_dav2_profile(), &slug, &json, &self.cfg); }
         }
     }
 
