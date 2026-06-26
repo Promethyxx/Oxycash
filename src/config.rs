@@ -149,7 +149,13 @@ pub fn load_config() -> Config {
     let path = default_conf_file();
     if path.exists() {
         if let Ok(text) = std::fs::read_to_string(&path) {
-            if let Ok(cfg) = serde_json::from_str::<Config>(&text) {
+            if let Ok(mut cfg) = serde_json::from_str::<Config>(&text) {
+                // Guarantee at least one profile — a corrupted config.json
+                // could have an empty array, which would crash active_profile().
+                if cfg.profiles.is_empty() {
+                    cfg.profiles.push(Profile::default_profile());
+                    cfg.active = "default".into();
+                }
                 return cfg;
             }
         }

@@ -37,15 +37,23 @@ impl Storage {
     pub fn active_profile(&self) -> &Profile {
         let slug = &self.cfg.active;
         self.cfg.profiles.iter().find(|p| &p.slug == slug)
-            .unwrap_or(&self.cfg.profiles[0])
+            .or_else(|| self.cfg.profiles.first())
+            .unwrap_or_else(|| {
+                log_dav(&self.cfg, "active_profile: profiles list is empty — this should never happen");
+                // Safety: load_config always ensures at least one profile exists.
+                // If we get here the config is corrupted beyond recovery.
+                panic!("no profiles in config");
+            })
     }
 
     pub fn active_profile_mut(&mut self) -> &mut Profile {
         let slug = self.cfg.active.clone();
         if let Some(i) = self.cfg.profiles.iter().position(|p| p.slug == slug) {
             &mut self.cfg.profiles[i]
-        } else {
+        } else if !self.cfg.profiles.is_empty() {
             &mut self.cfg.profiles[0]
+        } else {
+            panic!("no profiles in config");
         }
     }
 
@@ -72,7 +80,11 @@ impl Storage {
         if let Err(e) = std::fs::remove_file(&lf) {
             log_dav(&self.cfg, &format!("delete_profile: remove {:?} failed: {}", lf, e));
         }
-        if self.cfg.active == slug { self.cfg.active = self.cfg.profiles[0].slug.clone(); }
+        if self.cfg.active == slug {
+            if let Some(first) = self.cfg.profiles.first() {
+                self.cfg.active = first.slug.clone();
+            }
+        }
         save_config(&self.cfg);
     }
 
