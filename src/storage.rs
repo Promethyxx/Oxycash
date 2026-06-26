@@ -10,7 +10,7 @@ use crate::config::{
 };
 use crate::webdav::{
     dav_backup_upload, dav_connect, dav_read_marker, dav_save, dav_test_http,
-    dav_write_marker, make_client, now_ts, ConnectResult,
+    dav_write_marker, log_dav, make_client, now_ts, ConnectResult,
 };
 use crate::model::{AppData, apply_recurring};
 
@@ -68,7 +68,10 @@ impl Storage {
     pub fn delete_profile(&mut self, slug: &str) {
         if self.cfg.profiles.len() <= 1 { return; }
         self.cfg.profiles.retain(|p| p.slug != slug);
-        let _ = std::fs::remove_file(local_data_file(&self.cfg, slug));
+        let lf = local_data_file(&self.cfg, slug);
+        if let Err(e) = std::fs::remove_file(&lf) {
+            log_dav(&self.cfg, &format!("delete_profile: remove {:?} failed: {}", lf, e));
+        }
         if self.cfg.active == slug { self.cfg.active = self.cfg.profiles[0].slug.clone(); }
         save_config(&self.cfg);
     }
@@ -124,10 +127,6 @@ impl Storage {
 
     // ── Load ──────────────────────────────────────────────────────────────────
 
-    /// Load data for the active profile.
-    /// Strategy: if any DAV is configured, pick the source with the most-recent sync marker,
-    /// run the full connection sequence (ensure dirs → load or first-push),
-    /// fall back to local file, fall back to empty data.
     pub fn load(&mut self) -> SyncStatus {
         let prof = self.active_profile().clone();
         let slug = prof.slug.clone();
@@ -135,7 +134,6 @@ impl Storage {
         let dav2 = prof.has_dav2();
 
         if dav1 || dav2 {
-            // Arbitrate which source is more recent via sync marker
             let ts1 = if dav1 { dav_read_marker(&prof) } else { 0 };
             let ts2 = if dav2 { dav_read_marker(&prof.as_dav2_profile()) } else { 0 };
             let p2  = prof.as_dav2_profile();
@@ -144,7 +142,6 @@ impl Storage {
                                          else if dav1          { vec![&prof, &p2] }
                                          else                  { vec![&p2] };
 
-            // Get current local JSON to use as first-push payload if remote is absent
             let lf         = local_data_file(&self.cfg, &slug);
             let local_json = std::fs::read_to_string(&lf).unwrap_or_else(|_| {
                 AppData::new_empty().to_json()
@@ -154,27 +151,30 @@ impl Storage {
                 match dav_connect(source, &local_json, &self.cfg) {
                     ConnectResult::Loaded(mut app) => {
                         apply_recurring(&mut app);
-                        // Mirror to local file
                         let dir = base_dir(&self.cfg);
-                        let _ = std::fs::create_dir_all(&dir);
-                        let _ = std::fs::write(&lf, app.to_json());
-                        self.data  = app;
+                        if let Err(e) = std::fs::create_dir_all(&dir) {
+                            log_dav(&self.cfg, &format!("load: create_dir {:?} failed: {}", dir, e));
+                        }
+                        if let Err(e) = std::fs::write(&lf, app.to_json()) {
+                            log_dav(&self.cfg, &format!("load: write local mirror {:?} failed: {}", lf, e));
+                        }
+                        self.data   = app;
                         self.dav_ok = true;
                         return SyncStatus::Dav;
                     }
                     ConnectResult::Pushed => {
-                        // Remote was empty, local data is now there — load local
-                        if let Ok(text) = std::fs::read_to_string(&lf) {
-                            if let Ok(mut app) = AppData::from_json(&text) {
-                                apply_recurring(&mut app);
-                                self.data = app;
-                            }
+                        match std::fs::read_to_string(&lf) {
+                            Ok(text) => match AppData::from_json(&text) {
+                                Ok(mut app) => { apply_recurring(&mut app); self.data = app; }
+                                Err(e) => log_dav(&self.cfg, &format!("load/pushed: parse local failed: {}", e)),
+                            },
+                            Err(e) => log_dav(&self.cfg, &format!("load/pushed: read local failed: {}", e)),
                         }
                         self.dav_ok = true;
                         return SyncStatus::Dav;
                     }
-                    ConnectResult::Failed(_) => {
-                        // Try next source
+                    ConnectResult::Failed(e) => {
+                        log_dav(&self.cfg, &format!("load: dav_connect failed: {}", e));
                         continue;
                     }
                 }
@@ -185,28 +185,31 @@ impl Storage {
         self.dav_ok = false;
         let lf = local_data_file(&self.cfg, &slug);
         if lf.exists() {
-            if let Ok(text) = std::fs::read_to_string(&lf) {
-                if let Ok(mut app) = AppData::from_json(&text) {
-                    apply_recurring(&mut app);
-                    self.data = app;
-                    return SyncStatus::Local;
-                }
+            match std::fs::read_to_string(&lf) {
+                Ok(text) => match AppData::from_json(&text) {
+                    Ok(mut app) => { apply_recurring(&mut app); self.data = app; return SyncStatus::Local; }
+                    Err(e) => log_dav(&self.cfg, &format!("load: parse local {:?} failed: {}", lf, e)),
+                },
+                Err(e) => log_dav(&self.cfg, &format!("load: read local {:?} failed: {}", lf, e)),
             }
         }
 
-        // No local file either — start fresh
+        // No usable file — start fresh
+        log_dav(&self.cfg, &format!("load: no data found for '{}', starting empty", slug));
         self.data = AppData::new_empty();
         apply_recurring(&mut self.data);
         let dir = base_dir(&self.cfg);
-        let _ = std::fs::create_dir_all(&dir);
-        let _ = std::fs::write(local_data_file(&self.cfg, &slug), self.data.to_json());
+        if let Err(e) = std::fs::create_dir_all(&dir) {
+            log_dav(&self.cfg, &format!("load: create_dir {:?} failed: {}", dir, e));
+        }
+        if let Err(e) = std::fs::write(local_data_file(&self.cfg, &slug), self.data.to_json()) {
+            log_dav(&self.cfg, &format!("load: write initial file failed: {}", e));
+        }
         SyncStatus::Local
     }
 
     // ── Save ──────────────────────────────────────────────────────────────────
 
-    /// Save data for the active profile.
-    /// Always writes locally first; DAV save + backup happen asynchronously if configured.
     pub fn save(&mut self) -> SyncStatus {
         let prof = self.active_profile().clone();
         let slug = prof.slug.clone();
@@ -214,11 +217,15 @@ impl Storage {
 
         // Always write local copy first
         let dir = base_dir(&self.cfg);
-        let _ = std::fs::create_dir_all(&dir);
-        let _ = std::fs::write(local_data_file(&self.cfg, &slug), &json);
+        if let Err(e) = std::fs::create_dir_all(&dir) {
+            log_dav(&self.cfg, &format!("save: create_dir {:?} failed: {}", dir, e));
+        }
+        if let Err(e) = std::fs::write(local_data_file(&self.cfg, &slug), &json) {
+            log_dav(&self.cfg, &format!("save: write local failed: {}", e));
+        }
 
-        let dav1        = prof.has_dav();
-        let dav2        = prof.has_dav2();
+        let dav1          = prof.has_dav();
+        let dav2          = prof.has_dav2();
         let backup_webdav = self.cfg.backup_webdav;
 
         if dav1 || dav2 {
@@ -230,20 +237,30 @@ impl Storage {
 
             std::thread::spawn(move || {
                 if dav1 {
-                    if dav_save(&prof_clone, &AppData::from_json(&json_clone).unwrap_or_default(), &cfg_clone) {
-                        dav_write_marker(&prof_clone, ts);
-                        if backup_webdav {
-                            dav_backup_upload(&prof_clone, &slug_clone, &json_clone, &cfg_clone);
+                    match AppData::from_json(&json_clone) {
+                        Ok(data) => {
+                            if dav_save(&prof_clone, &data, &cfg_clone) {
+                                dav_write_marker(&prof_clone, ts);
+                                if backup_webdav {
+                                    dav_backup_upload(&prof_clone, &slug_clone, &json_clone, &cfg_clone);
+                                }
+                            }
                         }
+                        Err(e) => log_dav(&cfg_clone, &format!("save thread: parse json failed: {}", e)),
                     }
                 }
                 if dav2 {
                     let p2 = prof_clone.as_dav2_profile();
-                    if dav_save(&p2, &AppData::from_json(&json_clone).unwrap_or_default(), &cfg_clone) {
-                        dav_write_marker(&p2, ts);
-                        if backup_webdav {
-                            dav_backup_upload(&p2, &slug_clone, &json_clone, &cfg_clone);
+                    match AppData::from_json(&json_clone) {
+                        Ok(data) => {
+                            if dav_save(&p2, &data, &cfg_clone) {
+                                dav_write_marker(&p2, ts);
+                                if backup_webdav {
+                                    dav_backup_upload(&p2, &slug_clone, &json_clone, &cfg_clone);
+                                }
+                            }
                         }
+                        Err(e) => log_dav(&cfg_clone, &format!("save thread dav2: parse json failed: {}", e)),
                     }
                 }
             });
@@ -258,8 +275,7 @@ impl Storage {
 
     // ── Exit backup ───────────────────────────────────────────────────────────
 
-    /// Write a local backup and a DAV backup on application close.
-    /// Runs synchronously — the app closes only after both are done.
+    /// Synchronous — runs to completion before the window closes.
     pub fn backup_on_exit(&self) {
         let slug = self.active_profile().slug.clone();
         let json = self.data.to_json();
@@ -287,11 +303,16 @@ impl Storage {
     pub fn import_json(&mut self, raw: &str) -> bool {
         match AppData::from_json(raw) {
             Ok(app) if !app.months.is_empty() => { self.data = app; self.save(); true }
-            _ => false,
+            Ok(_)  => { log_dav(&self.cfg, "import_json: empty months, rejected"); false }
+            Err(e) => { log_dav(&self.cfg, &format!("import_json: parse failed: {}", e)); false }
         }
     }
 
-    pub fn reset(&mut self) { self.data = AppData::new_empty(); self.save(); }
+    pub fn reset(&mut self) {
+        log_dav(&self.cfg, &format!("reset: clearing data for '{}'", self.active_profile().slug));
+        self.data = AppData::new_empty();
+        self.save();
+    }
 
     // ── Config setters ────────────────────────────────────────────────────────
 

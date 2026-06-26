@@ -218,7 +218,7 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
                 };
 
                 step!(ww3, format!("4/4 HTTPS {} → {}…", host, ip));
-                let (ok, msg) = dav_test_http(&profile, client);
+                let (_ok, msg) = dav_test_http(&profile, client);
                 let msg2 = msg.clone();
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(w) = ww3.upgrade() { w.set_settings_dav2_status(format!("4/4 {}", msg2).into()); }

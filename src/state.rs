@@ -3,6 +3,10 @@
 use crate::model::{Line, Month};
 use crate::storage::Storage;
 use crate::storage::SyncStatus;
+use crate::webdav::log_dav;
+
+// Static empty vec returned when a month key is missing — avoids panic.
+static EMPTY_LINES: Vec<Line> = Vec::new();
 
 pub struct AppState {
     pub storage:        Storage,
@@ -45,12 +49,23 @@ impl AppState {
                 2 => &m.fixes,
                 _ => &m.variables,
             },
-            None => panic!("no month"),
+            None => {
+                log_dav(&self.storage.cfg, &format!(
+                    "sec_lines: month '{}' not found in data", self.current_month
+                ));
+                &EMPTY_LINES
+            }
         }
     }
 
     pub fn sec_lines_mut(&mut self, si: usize) -> &mut Vec<Line> {
         let mk = self.current_month.clone();
+        if !self.storage.data.months.contains_key(&mk) {
+            log_dav(&self.storage.cfg, &format!(
+                "sec_lines_mut: month '{}' not found — inserting empty month", mk
+            ));
+            self.storage.data.months.insert(mk.clone(), Month::default());
+        }
         let m = self.storage.data.months.get_mut(&mk).unwrap();
         match si {
             0 => &mut m.revenus,

@@ -84,7 +84,7 @@ impl Month {
             "retraits"  => &self.retraits,
             "fixes"     => &self.fixes,
             "variables" => &self.variables,
-            _           => panic!("Unknown section: {}", key),
+            _           => { eprintln!("section: unknown key '{}'", key); &self.variables }
         }
     }
 
@@ -94,7 +94,7 @@ impl Month {
             "retraits"  => &mut self.retraits,
             "fixes"     => &mut self.fixes,
             "variables" => &mut self.variables,
-            _           => panic!("Unknown section: {}", key),
+            _           => { eprintln!("section_mut: unknown key '{}'", key); &mut self.variables }
         }
     }
 }
