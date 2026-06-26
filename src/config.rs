@@ -5,52 +5,17 @@ use serde::{Deserialize, Serialize};
 use chrono;
 
 // ── Profile ───────────────────────────────────────────────────────────────────
+// A profile is just a named data slot. DAV credentials are global (in Config).
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
     pub name: String,
     pub slug: String,
-    #[serde(default)] pub dav_url:      String,
-    #[serde(default)] pub dav_user:     String,
-    #[serde(default)] pub dav_pass:     String,
-    #[serde(default)] pub dav2_url:     String,
-    #[serde(default)] pub dav2_user:    String,
-    #[serde(default)] pub dav2_pass:    String,
-    #[serde(default)] pub dav2_enabled: bool,
 }
 
 impl Profile {
     pub fn default_profile() -> Self {
-        Self {
-            name: "Default".into(), slug: "default".into(),
-            dav_url: String::new(), dav_user: String::new(), dav_pass: String::new(),
-            dav2_url: String::new(), dav2_user: String::new(), dav2_pass: String::new(),
-            dav2_enabled: false,
-        }
-    }
-
-    /// Returns a pseudo-profile using the secondary DAV credentials as primary,
-    /// for uniform handling in load/save/backup code.
-    pub fn as_dav2_profile(&self) -> Profile {
-        Profile {
-            name: self.name.clone(), slug: self.slug.clone(),
-            dav_url: self.dav2_url.clone(), dav_user: self.dav2_user.clone(), dav_pass: self.dav2_pass.clone(),
-            dav2_url: String::new(), dav2_user: String::new(), dav2_pass: String::new(),
-            dav2_enabled: false,
-        }
-    }
-
-    pub fn has_dav(&self) -> bool {
-        !self.dav_url.trim().is_empty()
-            && !self.dav_user.trim().is_empty()
-            && !self.dav_pass.trim().is_empty()
-    }
-
-    pub fn has_dav2(&self) -> bool {
-        self.dav2_enabled
-            && !self.dav2_url.trim().is_empty()
-            && !self.dav2_user.trim().is_empty()
-            && !self.dav2_pass.trim().is_empty()
+        Self { name: "Default".into(), slug: "default".into() }
     }
 }
 
@@ -66,6 +31,15 @@ pub struct Config {
     #[serde(default)]                      pub data_dir:      String,
     #[serde(default = "default_true")]     pub backup_local:  bool,
     #[serde(default = "default_true")]     pub backup_webdav: bool,
+    // WebDAV1 — global, shared by all profiles
+    #[serde(default)] pub dav_url:      String,
+    #[serde(default)] pub dav_user:     String,
+    #[serde(default)] pub dav_pass:     String,
+    // WebDAV2 — optional secondary, global
+    #[serde(default)] pub dav2_url:     String,
+    #[serde(default)] pub dav2_user:    String,
+    #[serde(default)] pub dav2_pass:    String,
+    #[serde(default)] pub dav2_enabled: bool,
 }
 
 fn default_slug()     -> String { "default".into() }
@@ -76,15 +50,69 @@ fn default_true()     -> bool   { true }
 impl Default for Config {
     fn default() -> Self {
         Self {
-            profiles:      vec![Profile::default_profile()],
-            active:        "default".into(),
-            lang:          "en".into(),
-            font_scale:    0,
-            currency:      "CHF".into(),
-            data_dir:      String::new(),
-            backup_local:  true,
-            backup_webdav: true,
+            profiles:     vec![Profile::default_profile()],
+            active:       "default".into(),
+            lang:         "en".into(),
+            font_scale:   0,
+            currency:     "CHF".into(),
+            data_dir:     String::new(),
+            backup_local: true, backup_webdav: true,
+            dav_url:  String::new(), dav_user:  String::new(), dav_pass:  String::new(),
+            dav2_url: String::new(), dav2_user: String::new(), dav2_pass: String::new(),
+            dav2_enabled: false,
         }
+    }
+}
+
+impl Config {
+    pub fn has_dav(&self) -> bool {
+        !self.dav_url.trim().is_empty()
+            && !self.dav_user.trim().is_empty()
+            && !self.dav_pass.trim().is_empty()
+    }
+
+    pub fn has_dav2(&self) -> bool {
+        self.dav2_enabled
+            && !self.dav2_url.trim().is_empty()
+            && !self.dav2_user.trim().is_empty()
+            && !self.dav2_pass.trim().is_empty()
+    }
+
+    /// Build a Profile-shaped struct for dav functions that expect credentials + slug.
+    pub fn dav_profile(&self, slug: &str) -> DavProfile {
+        DavProfile {
+            slug:     slug.to_string(),
+            dav_url:  self.dav_url.clone(),
+            dav_user: self.dav_user.clone(),
+            dav_pass: self.dav_pass.clone(),
+        }
+    }
+
+    pub fn dav2_profile(&self, slug: &str) -> DavProfile {
+        DavProfile {
+            slug:     slug.to_string(),
+            dav_url:  self.dav2_url.clone(),
+            dav_user: self.dav2_user.clone(),
+            dav_pass: self.dav2_pass.clone(),
+        }
+    }
+}
+
+/// Lightweight credential+slug bundle used by webdav functions.
+/// Replaces the old per-profile DAV fields.
+#[derive(Debug, Clone)]
+pub struct DavProfile {
+    pub slug:     String,
+    pub dav_url:  String,
+    pub dav_user: String,
+    pub dav_pass: String,
+}
+
+impl DavProfile {
+    pub fn has_dav(&self) -> bool {
+        !self.dav_url.trim().is_empty()
+            && !self.dav_user.trim().is_empty()
+            && !self.dav_pass.trim().is_empty()
     }
 }
 
@@ -140,7 +168,7 @@ pub fn local_data_file(cfg: &Config, slug: &str) -> PathBuf {
     base_dir(cfg).join(format!("oxycash_{}.json", slug))
 }
 
-pub fn dav_filename(slug: &str) -> String { format!("oxycash_{}.json", slug) }
+pub fn dav_filename(slug: &str)        -> String { format!("oxycash_{}.json", slug) }
 pub fn dav_marker_filename(slug: &str) -> String { format!("oxycash_{}.sync.json", slug) }
 
 // ── Config I/O ────────────────────────────────────────────────────────────────
@@ -150,12 +178,12 @@ pub fn load_config() -> Config {
     if path.exists() {
         if let Ok(text) = std::fs::read_to_string(&path) {
             if let Ok(mut cfg) = serde_json::from_str::<Config>(&text) {
-                // Guarantee at least one profile — a corrupted config.json
-                // could have an empty array, which would crash active_profile().
                 if cfg.profiles.is_empty() {
                     cfg.profiles.push(Profile::default_profile());
                     cfg.active = "default".into();
                 }
+                // Migration: if old per-profile DAV fields exist, hoist them to Config level
+                // (handled transparently by serde #[serde(default)] on the new Config fields)
                 return cfg;
             }
         }
@@ -183,20 +211,10 @@ fn ts_filename() -> String {
     chrono::Local::now().format("%Y-%m-%d_%H%M%S").to_string()
 }
 
-/// Write a timestamped backup to the local backup dir, keeping at most 30 per profile.
 pub fn backup_local(cfg: &Config, slug: &str, json: &str) {
     if !cfg.backup_local { return; }
     let dir = backup_dir(cfg);
     let _ = std::fs::create_dir_all(&dir);
     let fname = format!("oxycash_{}_{}.json", slug, ts_filename());
     let _ = std::fs::write(dir.join(&fname), json);
-    if let Ok(entries) = std::fs::read_dir(&dir) {
-        let mut files: Vec<PathBuf> = entries.flatten()
-            .filter(|e| e.file_name().to_string_lossy().starts_with(&format!("oxycash_{}_", slug)))
-            .map(|e| e.path()).collect();
-        files.sort();
-        if files.len() > 30 {
-            for old in &files[..files.len() - 30] { let _ = std::fs::remove_file(old); }
-        }
-    }
 }

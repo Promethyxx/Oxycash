@@ -347,15 +347,16 @@ pub fn push_settings(window: &AppWindow, state: &AppState) {
     }).collect();
     window.set_settings_profiles(ModelRc::new(VecModel::from(items)));
 
-    let prof = state.storage.active_profile();
-    window.set_settings_dav_url(prof.dav_url.clone().into());
-    window.set_settings_dav_user(prof.dav_user.clone().into());
-    window.set_settings_dav_pass(prof.dav_pass.clone().into());
-    window.set_settings_dav2_url(prof.dav2_url.clone().into());
-    window.set_settings_dav2_user(prof.dav2_user.clone().into());
-    window.set_settings_dav2_pass(prof.dav2_pass.clone().into());
-    window.set_settings_dav2_enabled(prof.dav2_enabled);
+    // DAV credentials are global
+    window.set_settings_dav_url(cfg.dav_url.clone().into());
+    window.set_settings_dav_user(cfg.dav_user.clone().into());
+    window.set_settings_dav_pass(cfg.dav_pass.clone().into());
+    window.set_settings_dav2_url(cfg.dav2_url.clone().into());
+    window.set_settings_dav2_user(cfg.dav2_user.clone().into());
+    window.set_settings_dav2_pass(cfg.dav2_pass.clone().into());
+    window.set_settings_dav2_enabled(cfg.dav2_enabled);
 
+    let prof = state.storage.active_profile();
     window.set_settings_currency_edit(cfg.currency.clone().into());
     window.set_profile_name(prof.name.clone().into());
     window.set_currency(cfg.currency.clone().into());

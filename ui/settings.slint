@@ -147,7 +147,7 @@ component InputField inherits Rectangle {
 export component SettingsView inherits Flickable {
     viewport-width: self.width;
 
-    in property <string> profile-name: "Default";
+    in-out property <string> profile-name: "Default";
     in property <string> currency:     "CHF";
     in property <bool>   is-dark:      true;
     in property <string> dav-status:   "";
@@ -246,13 +246,16 @@ export component SettingsView inherits Flickable {
                         animate border-color { duration: 120ms; }
                         rename-input := TextInput {
                             x: 4px; width: parent.width - 8px; height: parent.height;
+                            text <=> root.profile-name;
                             font-size: 14px + Palette.font-offset;
                             font-weight: 600;
                             color: Palette.text;
                             vertical-alignment: center;
-                            init => { self.text = prof.name; }
                             accepted => {
-                                if self.text != "" {
+                                if self.text != "" { root.rename-profile(self.text); }
+                            }
+                            changed has-focus => {
+                                if !self.has-focus && self.text != "" && self.text != prof.name {
                                     root.rename-profile(self.text);
                                 }
                             }

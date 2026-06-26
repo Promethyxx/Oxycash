@@ -28,8 +28,7 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let url:  String = w.get_settings_dav_url().into();
             let user: String = w.get_settings_dav_user().into();
             let pass: String = w.get_settings_dav_pass().into();
-            let slug = st.storage.cfg.active.clone();
-            st.storage.save_profile_dav(&slug, &url, &user, &pass);
+            st.storage.save_dav_config(&url, &user, &pass);
             w.set_settings_dav_status("Connexion en cours…".into());
             let status = st.storage.load();
             if status == SyncStatus::Dav {
@@ -61,9 +60,8 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let url:  String = w.get_settings_dav_url().into();
             let user: String = w.get_settings_dav_user().into();
             let pass: String = w.get_settings_dav_pass().into();
-            let slug = st.storage.cfg.active.clone();
-            st.storage.save_profile_dav(&slug, &url, &user, &pass);
-            let profile = st.storage.active_profile().clone();
+            st.storage.save_dav_config(&url, &user, &pass);
+            let dp = st.storage.cfg.dav_profile(&st.storage.cfg.active);
             drop(st);
             w.set_settings_dav_status("1/4 init client…".into());
 
@@ -90,14 +88,14 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
                 { step!(ww3, format!("2/4 FAIL réseau: {}", e)); return; }
 
                 step!(ww3, "3/4 DNS…");
-                let host = extract_host(&profile.dav_url);
+                let host = extract_host(&dp.dav_url);
                 let ip   = match resolve_dns(&host) {
                     Ok(ip) => ip,
                     Err(e) => { step!(ww3, e); return; }
                 };
 
                 step!(ww3, format!("4/4 HTTPS {} → {}…", host, ip));
-                let (ok, msg) = dav_test_http(&profile, client);
+                let (ok, msg) = dav_test_http(&dp, client);
                 let msg2 = msg.clone();
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(w) = ww3.upgrade() { w.set_settings_dav_status(format!("4/4 {}", msg2).into()); }
@@ -123,8 +121,7 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
         window.on_clear_dav(move || {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
-            let slug = st.storage.cfg.active.clone();
-            st.storage.save_profile_dav(&slug, "", "", "");
+            st.storage.save_dav_config("", "", "");
             st.storage.dav_ok = false;
             w.set_settings_dav_url("".into());
             w.set_settings_dav_user("".into());
@@ -148,8 +145,7 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let user:    String = w.get_settings_dav2_user().into();
             let pass:    String = w.get_settings_dav2_pass().into();
             let enabled: bool   = w.get_settings_dav2_enabled();
-            let slug = st.storage.cfg.active.clone();
-            st.storage.save_profile_dav2(&slug, &url, &user, &pass, enabled);
+            st.storage.save_dav2_config(&url, &user, &pass, enabled);
             w.set_settings_dav2_status("Connexion en cours…".into());
             let status = st.storage.load();
             if status == SyncStatus::Dav {
@@ -182,9 +178,8 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let user:    String = w.get_settings_dav2_user().into();
             let pass:    String = w.get_settings_dav2_pass().into();
             let enabled: bool   = w.get_settings_dav2_enabled();
-            let slug = st.storage.cfg.active.clone();
-            st.storage.save_profile_dav2(&slug, &url, &user, &pass, enabled);
-            let profile = st.storage.active_profile().as_dav2_profile();
+            st.storage.save_dav2_config(&url, &user, &pass, enabled);
+            let dp = st.storage.cfg.dav2_profile(&st.storage.cfg.active.clone());
             drop(st);
             w.set_settings_dav2_status("1/4 init client…".into());
 
@@ -211,14 +206,14 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
                 { step!(ww3, format!("2/4 FAIL réseau: {}", e)); return; }
 
                 step!(ww3, "3/4 DNS…");
-                let host = extract_host(&profile.dav_url);
+                let host = extract_host(&dp.dav_url);
                 let ip   = match resolve_dns(&host) {
                     Ok(ip) => ip,
                     Err(e) => { step!(ww3, e); return; }
                 };
 
                 step!(ww3, format!("4/4 HTTPS {} → {}…", host, ip));
-                let (_ok, msg) = dav_test_http(&profile, client);
+                let (_ok, msg) = dav_test_http(&dp, client);
                 let msg2 = msg.clone();
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(w) = ww3.upgrade() { w.set_settings_dav2_status(format!("4/4 {}", msg2).into()); }
@@ -243,8 +238,7 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
         window.on_clear_dav2(move || {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
-            let slug = st.storage.cfg.active.clone();
-            st.storage.save_profile_dav2(&slug, "", "", "", false);
+            st.storage.save_dav2_config("", "", "", false);
             w.set_settings_dav2_url("".into());
             w.set_settings_dav2_user("".into());
             w.set_settings_dav2_pass("".into());
@@ -387,11 +381,14 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
             let n: String = new_name.into();
-            let slug = st.storage.cfg.active.clone();
-            st.storage.rename_profile(&slug, &n);
+            let old_slug = st.storage.cfg.active.clone();
+            let new_slug = st.storage.rename_profile(&old_slug, &n);
+            // If slug changed, update active month key prefix is unaffected
+            // (month keys are JAN/FEB/... not slug-based)
             w.set_profile_name(st.storage.active_profile().name.clone().into());
+            w.set_sync_status(status_str(st.storage.status()).into());
             push_settings(&w, &st);
-            show_toast(&w, "Profile renamed");
+            show_toast(&w, &format!("Profile renamed to '{}'", n));
         });
     }
 
