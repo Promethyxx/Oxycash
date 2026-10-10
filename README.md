@@ -40,6 +40,7 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
    - Android UI
    - Add a tick button
    - Link the “Debts” tab to monthly expenses
+   - Export only a tab
 ## 🟡 NEXT
  - ### Release:
    - Chocolatey
