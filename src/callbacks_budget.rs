@@ -5,7 +5,7 @@ use slint::ComponentHandle;
 use std::sync::{Arc, Mutex};
 
 use crate::{AppWindow, Tab};
-use crate::compute::sync_frais_from_months;
+use crate::compute::{rename_debt, round2, sync_frais_from_months};
 use crate::model::{Line, Payment, Recurring, MONTHS};
 use crate::push::{push_month, push_register, push_charts, push_debts, push_savings, push_expenses, push_viability, push_settings};
 use crate::state::AppState;
@@ -111,7 +111,9 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
         window.on_update_name(move |si, li, val| {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
+            let debt_id = st.sec_lines(si as usize).get(li as usize).and_then(|l| l.debt_id.clone());
             st.sec_lines_mut(si as usize)[li as usize].name = val.to_string();
+            if let Some(id) = debt_id { rename_debt(&mut st.storage.data, &id, val.as_str()); }
             st.sec_lines_mut(si as usize).sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
             st.lines_expanded[si as usize] = vec![];
             st.ensure_expanded();
@@ -218,11 +220,34 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let mut st = state_ref.lock().unwrap();
             if let Ok(amount) = amt.parse::<f64>() {
                 let d = if date.is_empty() { today() } else { date.to_string() };
-                st.sec_lines_mut(si as usize)[li as usize].payments.push(Payment { date: d, amount });
+                st.sec_lines_mut(si as usize)[li as usize].payments.push(Payment { date: d, amount, quick: false });
                 sync_frais_from_months(&mut st);
                 st.storage.save();
                 push_month(&w, &st);
             }
+        });
+    }
+
+    // Toggle quick-pay check
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_toggle_check(move |si, li| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            {
+                let Some(line) = st.sec_lines_mut(si as usize).get_mut(li as usize) else { return };
+                if line.payments.iter().any(|p| p.quick) {
+                    line.payments.retain(|p| !p.quick);
+                } else {
+                    let rest = round2(line.solde());
+                    if rest <= 0.004 { return; }
+                    line.payments.push(Payment { date: today(), amount: rest, quick: true });
+                }
+            }
+            sync_frais_from_months(&mut st);
+            st.storage.save();
+            push_month(&w, &st);
         });
     }
 
@@ -300,6 +325,7 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
                             sec.push(Line {
                                 name: name.clone(), banque, cash, payments: vec![],
                                 recurring: Some(Recurring { freq: freq as u32, start: mk.clone() }),
+                                debt_id: None,
                             });
                             sec.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
                         }

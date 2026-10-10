@@ -16,10 +16,14 @@ pub const MNAMES: [&str; 12] = [
 ];
 
 // --- Primitives
+fn is_false(b: &bool) -> bool { !*b }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Payment {
     pub date: String,   // YYYY-MM-DD
     pub amount: f64,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub quick: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -39,6 +43,8 @@ pub struct Line {
     pub payments: Vec<Payment>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recurring: Option<Recurring>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub debt_id: Option<String>,
 }
 
 impl Line {
@@ -49,6 +55,7 @@ impl Line {
             cash: 0.0,
             payments: vec![],
             recurring: None,
+            debt_id: None,
         }
     }
 
@@ -102,6 +109,8 @@ impl Month {
 // --- Debts
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Dette {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub id: String,
     #[serde(default)]
     pub rep: String,
     #[serde(default)]
@@ -362,6 +371,7 @@ pub fn apply_recurring(data: &mut AppData) {
                                 freq: rec.freq,
                                 start: rec.start.clone(),
                             }),
+                            debt_id: None,
                         },
                     });
                 }
@@ -389,6 +399,10 @@ pub fn detect_budget_month() -> &'static str {
         now.month0() as usize
     };
     MONTHS[mi]
+}
+
+pub fn new_debt_id(salt: usize) -> String {
+    format!("d{}x{}", Local::now().timestamp_millis(), salt)
 }
 
 // --- Formatting

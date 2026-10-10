@@ -4,9 +4,36 @@ use slint::ComponentHandle;
 use std::sync::{Arc, Mutex};
 
 use crate::AppWindow;
-use crate::model::{Dette, SavingsProject, SavingsRow, ViabiliteColonne, ViabilitePalier};
-use crate::push::{push_debts, push_savings, push_viability};
+use crate::compute::{plan_debt, rename_debt, round2, sync_frais_from_months};
+use crate::model::{new_debt_id, Dette, SavingsProject, SavingsRow, ViabiliteColonne, ViabilitePalier};
+use crate::push::{push_debts, push_month, push_savings, push_viability};
 use crate::state::AppState;
+use crate::ui_helpers::show_toast;
+
+fn set_debt_field(st: &mut AppState, i: usize, f: &str, v: String) -> bool {
+    if i >= st.storage.data.dettes.len() { return false; }
+    let mut rename: Option<(String, String)> = None;
+    {
+        let d = &mut st.storage.data.dettes[i];
+        match f {
+            "creditor"   => { d.creancier = v.clone(); rename = Some((d.id.clone(), v)); }
+            "rep"        => d.rep       = v,
+            "pursuit"    => d.poursuite = v,
+            "balance"    => { if let Ok(n) = v.trim().replace(',', ".").parse::<f64>() { d.solde    = n; } }
+            "balance-ok" => { if let Ok(n) = v.trim().replace(',', ".").parse::<f64>() { d.solde_ok = n; } }
+            "status"     => d.etat = v,
+            "date"       => d.date = v,
+            _ => {}
+        }
+    }
+    if let Some((id, name)) = rename {
+        rename_debt(&mut st.storage.data, &id, &name);
+        st.lines_expanded[3] = vec![];
+        st.ensure_expanded();
+        sync_frais_from_months(st);
+    }
+    true
+}
 
 pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
 
@@ -18,7 +45,8 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
         window.on_add_debt(move || {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
-            st.storage.data.dettes.push(Dette::default());
+            let id = new_debt_id(st.storage.data.dettes.len());
+            st.storage.data.dettes.push(Dette { id, ..Dette::default() });
             st.storage.save();
             push_debts(&w, &st);
         });
@@ -32,9 +60,20 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let mut st = state_ref.lock().unwrap();
             let i = idx as usize;
             if i < st.storage.data.dettes.len() {
+                let id = st.storage.data.dettes[i].id.clone();
+                if !id.is_empty() {
+                    for m in st.storage.data.months.values_mut() {
+                        for lines in [&mut m.revenus, &mut m.retraits, &mut m.fixes, &mut m.variables] {
+                            for l in lines.iter_mut() {
+                                if l.debt_id.as_deref() == Some(id.as_str()) { l.debt_id = None; }
+                            }
+                        }
+                    }
+                }
                 st.storage.data.dettes.remove(i);
                 st.storage.save();
                 push_debts(&w, &st);
+                push_month(&w, &st);
             }
         });
     }
@@ -45,24 +84,52 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
         window.on_update_debt_field(move |idx, field, val| {
             let w = ww.unwrap();
             let mut st = state_ref.lock().unwrap();
-            let i = idx as usize;
-            if i < st.storage.data.dettes.len() {
-                let d = &mut st.storage.data.dettes[i];
-                let f: String = field.into();
-                let v: String = val.into();
-                match f.as_str() {
-                    "creditor"   => d.creancier = v,
-                    "rep"        => d.rep       = v,
-                    "pursuit"    => d.poursuite = v,
-                    "balance"    => { if let Ok(n) = v.parse::<f64>() { d.solde    = n; } }
-                    "balance-ok" => { if let Ok(n) = v.parse::<f64>() { d.solde_ok = n; } }
-                    "status"     => d.etat = v,
-                    "date"       => d.date = v,
-                    _ => {}
-                }
+            if set_debt_field(&mut st, idx as usize, field.as_str(), val.to_string()) {
                 st.storage.save();
                 push_debts(&w, &st);
+                push_month(&w, &st);
             }
+        });
+    }
+
+    {
+        let state_ref = state.clone();
+        window.on_commit_debt_field(move |idx, field, val| {
+            let mut st = state_ref.lock().unwrap();
+            if set_debt_field(&mut st, idx as usize, field.as_str(), val.to_string()) {
+                st.storage.save();
+            }
+        });
+    }
+
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_add_debt_to_month(move |idx, creditor, amounts| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            if i >= st.storage.data.dettes.len() { return; }
+            let mut months: Vec<usize> = vec![];
+            let mut values: Vec<f64>   = vec![];
+            for (m, part) in amounts.as_str().split(';').enumerate().take(12) {
+                if let Ok(v) = part.trim().replace(',', ".").parse::<f64>() {
+                    if v > 0.0 { months.push(m); values.push(round2(v)); }
+                }
+            }
+            if months.is_empty() { show_toast(&w, "Enter amounts"); return; }
+            let name = creditor.trim().to_string();
+            if !name.is_empty() { st.storage.data.dettes[i].creancier = name.clone(); }
+            plan_debt(&mut st.storage.data, i, &months, &values);
+            let id = st.storage.data.dettes[i].id.clone();
+            if !name.is_empty() { rename_debt(&mut st.storage.data, &id, &name); }
+            st.lines_expanded[3] = vec![];
+            st.ensure_expanded();
+            sync_frais_from_months(&mut st);
+            st.storage.save();
+            push_month(&w, &st);
+            push_debts(&w, &st);
+            show_toast(&w, "Added to month");
         });
     }
 

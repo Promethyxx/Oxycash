@@ -25,6 +25,8 @@ pub fn make_line_items(lines: &[Line]) -> ModelRc<LineItem> {
             idx:            i as i32,
             has_recurring:  has_rec,
             recurring_freq: rec_freq,
+            checked:        l.payments.iter().any(|p| p.quick),
+            has_debt:       l.debt_id.is_some(),
         }
     }).collect();
     ModelRc::new(VecModel::from(items))

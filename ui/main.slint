@@ -206,10 +206,13 @@ export component AppWindow inherits Window {
     callback delete-pay(int, int, int);
     callback add-pay(int, int, string, string);
     callback set-recurring(int, int, int, bool);
+    callback toggle-check(int, int);
+    callback add-debt-to-month(int, string, string);
     callback toggle-register-sort();
     callback add-debt();
     callback delete-debt(int);
     callback update-debt-field(int, string, string);
+    callback commit-debt-field(int, string, string);
     callback add-saving();
     callback delete-saving(int);
     callback update-saving-field(int, string, string);
@@ -415,6 +418,7 @@ export component AppWindow inherits Window {
                 add-pay(s, l, d, a)    => { root.add-pay(s, l, d, a); }
                 set-recurring(s, l, f, p) => { root.set-recurring(s, l, f, p); }
                 toggle-register-sort   => { root.toggle-register-sort(); }
+                toggle-check(s, l)     => { root.toggle-check(s, l); }
             }
             if current-tab == Tab.Debts     : DebtsView {
                 currency:   currency;
@@ -425,6 +429,8 @@ export component AppWindow inherits Window {
                 add-debt           => { root.add-debt(); }
                 delete-debt(idx)   => { root.delete-debt(idx); }
                 update-debt-field(idx, field, val) => { root.update-debt-field(idx, field, val); }
+                commit-debt-field(idx, field, val) => { root.commit-debt-field(idx, field, val); }
+                add-debt-to-month(idx, c, a) => { root.add-debt-to-month(idx, c, a); }
             }
             if current-tab == Tab.Savings   : SavingsView {
                 currency: currency;
