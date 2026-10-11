@@ -37,6 +37,7 @@ impl AppState {
         self.storage.data.months.get(&self.current_month)
     }
 
+    #[allow(dead_code)]
     pub fn month_mut(&mut self) -> Option<&mut Month> {
         self.storage.data.months.get_mut(&self.current_month)
     }

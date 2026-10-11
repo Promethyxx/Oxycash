@@ -109,6 +109,7 @@ pub struct DavProfile {
 }
 
 impl DavProfile {
+    #[allow(dead_code)]
     pub fn has_dav(&self) -> bool {
         !self.dav_url.trim().is_empty()
             && !self.dav_user.trim().is_empty()

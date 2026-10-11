@@ -14,6 +14,37 @@ export struct DebtItem {
     status: string,
     date: string,
     idx: int,
+    planned: string,
+    paid: string,
+    left: string,
+    level: int,
+}
+
+component MonthAmount inherits Rectangle {
+    in property <string> label;
+    in-out property <string> amount;
+
+    horizontal-stretch: 1;
+
+    VerticalLayout {
+        spacing: 2px;
+        Text { text: label; font-size: 11px + Palette.font-offset; font-weight: 600; color: Palette.text3; horizontal-alignment: center; }
+        Rectangle {
+            height: 26px;
+            border-radius: 5px;
+            border-width: 1px;
+            border-color: amount != "" ? Palette.teal : Palette.card-border;
+            background: #00000020;
+            TextInput {
+                text <=> root.amount;
+                font-size: 13px + Palette.font-offset;
+                color: Palette.teal;
+                horizontal-alignment: center;
+                input-type: decimal;
+                vertical-alignment: center;
+            }
+        }
+    }
 }
 
 component DebtCard inherits Rectangle {
@@ -22,11 +53,16 @@ component DebtCard inherits Rectangle {
 
     callback update-field(int, string, string);  // idx, field-name, value
     callback delete(int);
+    callback commit-field(int, string, string);
+    callback add-to-month(int, string, string);
+    in-out property <string> a0; in-out property <string> a1; in-out property <string> a2; in-out property <string> a3;
+    in-out property <string> a4; in-out property <string> a5; in-out property <string> a6; in-out property <string> a7;
+    in-out property <string> a8; in-out property <string> a9; in-out property <string> a10; in-out property <string> a11;
 
     border-radius: 10px;
     background: Palette.card;
-    border-width: 1px;
-    border-color: debt.balance-ok >= debt.balance && debt.balance > 0.0 ? Palette.green : Palette.card-border;
+    border-width: 2px;
+    border-color: debt.level == 2 ? Palette.green : (debt.level == 1 ? Palette.amber : Palette.danger);
 
     VerticalLayout {
         padding: 12px;
@@ -42,7 +78,7 @@ component DebtCard inherits Rectangle {
                 border-radius: 6px;
                 border-width: 1px;
                 border-color: Palette.card-border;
-                TextInput {
+                ti-creditor := TextInput {
                     text: debt.creditor;
                     font-size: 15px + Palette.font-offset;
                     font-weight: 700;
@@ -50,6 +86,7 @@ component DebtCard inherits Rectangle {
                     vertical-alignment: center;
                     horizontal-alignment: left;
                     accepted => { root.update-field(debt.idx, "creditor", self.text); }
+                    changed has-focus => { if !self.has-focus { root.commit-field(debt.idx, "creditor", self.text); } }
                 }
             }
 
@@ -87,6 +124,7 @@ component DebtCard inherits Rectangle {
                     color: Palette.text2;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "rep", self.text); }
+                    changed has-focus => { if !self.has-focus { root.commit-field(debt.idx, "rep", self.text); } }
                 }
             }
 
@@ -104,6 +142,7 @@ component DebtCard inherits Rectangle {
                     color: Palette.text2;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "pursuit", self.text); }
+                    changed has-focus => { if !self.has-focus { root.commit-field(debt.idx, "pursuit", self.text); } }
                 }
             }
         }
@@ -128,6 +167,7 @@ component DebtCard inherits Rectangle {
                     input-type: decimal;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "balance", self.text); }
+                    changed has-focus => { if !self.has-focus { root.commit-field(debt.idx, "balance", self.text); } }
                 }
             }
 
@@ -147,6 +187,7 @@ component DebtCard inherits Rectangle {
                     input-type: decimal;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "balance-ok", self.text); }
+                    changed has-focus => { if !self.has-focus { root.commit-field(debt.idx, "balance-ok", self.text); } }
                 }
             }
         }
@@ -169,6 +210,7 @@ component DebtCard inherits Rectangle {
                     color: Palette.text2;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "status", self.text); }
+                    changed has-focus => { if !self.has-focus { root.commit-field(debt.idx, "status", self.text); } }
                 }
             }
 
@@ -186,14 +228,60 @@ component DebtCard inherits Rectangle {
                     color: Palette.text3;
                     vertical-alignment: center;
                     accepted => { root.update-field(debt.idx, "date", self.text); }
+                    changed has-focus => { if !self.has-focus { root.commit-field(debt.idx, "date", self.text); } }
                 }
             }
+        }
+
+        // Row 5: Planned / Paid / Left
+        HorizontalLayout {
+            spacing: 6px;
+            height: 22px;
+
+            Text { text: I18n.deb-planned + " " + debt.planned; font-size: 13px + Palette.font-offset; color: Palette.text2; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+            Text { text: I18n.deb-paid + " " + debt.paid; font-size: 13px + Palette.font-offset; font-weight: 600; color: Palette.teal; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+            Text { text: I18n.deb-left + " " + debt.left; font-size: 13px + Palette.font-offset; font-weight: 600; color: Palette.amber; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+        }
+
+        // Row 6: Amount per month
+        HorizontalLayout {
+            spacing: 4px;
+            MonthAmount { label: "JAN"; amount <=> a0; }
+            MonthAmount { label: "FEB"; amount <=> a1; }
+            MonthAmount { label: "MAR"; amount <=> a2; }
+            MonthAmount { label: "APR"; amount <=> a3; }
+            MonthAmount { label: "MAI"; amount <=> a4; }
+            MonthAmount { label: "JUN"; amount <=> a5; }
+        }
+        HorizontalLayout {
+            spacing: 4px;
+            MonthAmount { label: "JUL"; amount <=> a6; }
+            MonthAmount { label: "AUG"; amount <=> a7; }
+            MonthAmount { label: "SEP"; amount <=> a8; }
+            MonthAmount { label: "OCT"; amount <=> a9; }
+            MonthAmount { label: "NOV"; amount <=> a10; }
+            MonthAmount { label: "DEC"; amount <=> a11; }
+        }
+        Rectangle {
+            height: 30px;
+            border-radius: 6px;
+            background: Palette.teal;
+            TouchArea {
+                clicked => {
+                    root.add-to-month(debt.idx, ti-creditor.text,
+                        a0 + ";" + a1 + ";" + a2 + ";" + a3 + ";" + a4 + ";" + a5 + ";"
+                        + a6 + ";" + a7 + ";" + a8 + ";" + a9 + ";" + a10 + ";" + a11);
+                    a0 = ""; a1 = ""; a2 = ""; a3 = ""; a4 = ""; a5 = "";
+                    a6 = ""; a7 = ""; a8 = ""; a9 = ""; a10 = ""; a11 = "";
+                }
+            }
+            Text { text: I18n.deb-to-month; font-size: 14px + Palette.font-offset; font-weight: 700; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
         }
     }
 }
 
 export component DebtsView inherits Flickable {
-    viewport-width: self.width;
+    content-width: self.width;
     in property <string>     currency:     "CHF";
     in property <string>     total-due:    "0";
     in property <string>     total-neg:    "0";
@@ -203,6 +291,8 @@ export component DebtsView inherits Flickable {
     callback add-debt();
     callback delete-debt(int);
     callback update-debt-field(int, string, string);  // idx, field, value
+    callback commit-debt-field(int, string, string);
+    callback add-debt-to-month(int, string, string);
 
     VerticalLayout {
         padding: 14px;
@@ -253,7 +343,9 @@ export component DebtsView inherits Flickable {
             debt: debt;
             currency: currency;
             update-field(idx, field, val) => { root.update-debt-field(idx, field, val); }
+            commit-field(idx, field, val) => { root.commit-debt-field(idx, field, val); }
             delete(idx) => { root.delete-debt(idx); }
+            add-to-month(idx, c, a) => { root.add-debt-to-month(idx, c, a); }
         }
 
         // Add button

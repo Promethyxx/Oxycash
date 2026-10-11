@@ -232,6 +232,7 @@ fn dav_put_raw(client: &reqwest::blocking::Client, url: &str, body: &str, auth: 
 
 // ── Delete ────────────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 pub fn dav_delete(dp: &DavProfile, url: &str, cfg: &Config) -> bool {
     let client = match make_client() {
         Ok(c)  => c,

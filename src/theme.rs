@@ -60,10 +60,12 @@ pub const LIGHT: ThemePalette = ThemePalette {
     purple:      "#8B5CA6",
 };
 
+#[allow(dead_code)]
 pub struct Theme {
     pub is_dark: bool,
 }
 
+#[allow(dead_code)]
 impl Theme {
     pub fn new(dark: bool) -> Self {
         Self { is_dark: dark }

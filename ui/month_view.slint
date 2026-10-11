@@ -7,6 +7,7 @@ import { I18n } from "i18n.slint";
 export struct LineItem {
     name: string, banque: float, cash: float, etat: string, solde: string,
     solde-val: float, idx: int, has-recurring: bool, recurring-freq: int,
+    checked: bool, has-debt: bool,
 }
 export struct PaymentItem { date: string, amount: float, idx: int, }
 export struct RegisterEntry { date: string, label: string, section: string, amount: float, }
@@ -125,69 +126,79 @@ component LineRow inherits Rectangle {
     callback update-banque(int, int, string); callback update-cash(int, int, string);
     callback update-name(int, int, string); callback delete-line(int, int);
     callback delete-pay(int, int, int); callback add-pay(int, int, string, string);
-    callback open-recurring(int, int, int);  // sec, line → opens root-level popup
+    callback open-recurring(int, int, int);
+    callback toggle-check(int, int);
 
     background: transparent;
     VerticalLayout { spacing: 0px;
         Rectangle {
-            height: 42px; border-radius: expanded ? 0px : 10px;
+            border-radius: expanded ? 0px : 10px;
             background: Palette.card; border-width: 1px;
             border-color: expanded ? Palette.gold : Palette.card-border;
 
-            HorizontalLayout { padding-left: 12px; padding-right: 8px; spacing: 4px;
-                // Name
-                TextInput { text: line.name; font-size: 14px + Palette.font-offset; font-weight: 500; color: Palette.text;
-                    horizontal-stretch: 1; vertical-alignment: center;
-                    accepted => { root.update-name(sec-idx, line.idx, self.text); }
+            VerticalLayout { padding-left: 12px; padding-right: 8px; padding-top: 6px; padding-bottom: 6px; spacing: 4px;
+                HorizontalLayout { spacing: 4px;
+                    TextInput { text: line.name; font-size: 14px + Palette.font-offset; font-weight: 500; color: Palette.text;
+                        wrap: word-wrap; min-width: 40px; min-height: 28px;
+                        horizontal-stretch: 1; vertical-alignment: center;
+                        accepted => { root.update-name(sec-idx, line.idx, self.text); }
+                    }
+                    Rectangle { width: 58px; height: 28px; border-radius: 5px; border-width: 1px;
+                        border-color: Palette.card-border; background: #00000030;
+                        TextInput { text: line.banque; font-size: 14px + Palette.font-offset; color: Palette.blue;
+                            horizontal-alignment: right; input-type: decimal; vertical-alignment: center;
+                            accepted => { root.update-banque(sec-idx, line.idx, self.text); } }
+                    }
+                    Rectangle { width: 58px; height: 28px; border-radius: 5px; border-width: 1px;
+                        border-color: Palette.card-border; background: #00000030;
+                        TextInput { text: line.cash; font-size: 14px + Palette.font-offset; color: Palette.amber;
+                            horizontal-alignment: right; input-type: decimal; vertical-alignment: center;
+                            accepted => { root.update-cash(sec-idx, line.idx, self.text); } }
+                    }
+                    Rectangle { width: 58px; height: 28px; background: transparent;
+                        Text { text: line.etat; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.teal; horizontal-alignment: right; vertical-alignment: center; }
+                    }
+                    Rectangle { width: 52px; height: 28px; background: transparent;
+                        Text { text: line.solde; font-size: 14px + Palette.font-offset; font-weight: 700;
+                            color: line.solde-val <= 0.01 ? Palette.green : Palette.danger;
+                            horizontal-alignment: right; vertical-alignment: center; }
+                    }
                 }
-                // Expand "+"/"-"
-                Rectangle { width: 26px; height: 26px; border-radius: 4px;
-                    background: expanded ? Palette.gold.with-alpha(0.2) : transparent;
-                    TouchArea { clicked => { root.toggle(line.idx); } }
-                    Text { text: expanded ? "−" : "+"; font-size: 16px + Palette.font-offset; font-weight: 700;
-                        color: expanded ? Palette.gold : Palette.text3;
-                        horizontal-alignment: center; vertical-alignment: center; }
-                }
-                // Recurring "↻"
-                Rectangle { width: 26px; height: 26px; border-radius: 4px;
-                    background: line.has-recurring ? Palette.blue.with-alpha(0.2) : transparent;
-                    TouchArea { clicked => { root.open-recurring(sec-idx, line.idx, line.has-recurring ? line.recurring-freq : 3); } }
-                    Text { text: "↻"; font-size: 16px + Palette.font-offset; font-weight: 700;
-                        color: line.has-recurring ? Palette.blue : Palette.text3;
-                        horizontal-alignment: center; vertical-alignment: center; }
-                }
-                // Banque
-                Rectangle { width: 58px; height: 28px; border-radius: 5px; border-width: 1px;
-                    border-color: Palette.card-border; background: #00000030;
-                    TextInput { text: line.banque; font-size: 14px + Palette.font-offset; color: Palette.blue;
-                        horizontal-alignment: right; input-type: decimal; vertical-alignment: center;
-                        accepted => { root.update-banque(sec-idx, line.idx, self.text); } }
-                }
-                // Cash
-                Rectangle { width: 58px; height: 28px; border-radius: 5px; border-width: 1px;
-                    border-color: Palette.card-border; background: #00000030;
-                    TextInput { text: line.cash; font-size: 14px + Palette.font-offset; color: Palette.amber;
-                        horizontal-alignment: right; input-type: decimal; vertical-alignment: center;
-                        accepted => { root.update-cash(sec-idx, line.idx, self.text); } }
-                }
-                // Etat
-                Rectangle { width: 58px; height: 28px; background: transparent;
-                    Text { text: line.etat; font-size: 14px + Palette.font-offset; font-weight: 700; color: Palette.teal; horizontal-alignment: right; vertical-alignment: center; }
-                }
-                // Solde
-                Rectangle { width: 52px; height: 28px; background: transparent;
-                    Text { text: line.solde; font-size: 14px + Palette.font-offset; font-weight: 700;
-                        color: line.solde-val <= 0.01 ? Palette.green : Palette.danger;
-                        horizontal-alignment: right; vertical-alignment: center; }
-                }
-                // Delete
-                Rectangle { width: 24px; height: 24px; border-radius: 4px;
-                    TouchArea { clicked => { root.delete-line(sec-idx, line.idx); } }
-                    Text { text: "x"; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+                HorizontalLayout { spacing: 8px; alignment: start; height: 28px;
+                    Rectangle { width: 28px; height: 28px; border-radius: 4px;
+                        background: line.checked ? Palette.teal.with-alpha(0.2) : transparent;
+                        TouchArea { clicked => { root.toggle-check(sec-idx, line.idx); } }
+                        Path {
+                            x: 7px; y: 8px; width: 14px; height: 12px;
+                            viewbox-width: 14; viewbox-height: 12;
+                            commands: "M 1 6 L 5 10 L 13 2";
+                            stroke: line.checked ? Palette.teal : Palette.text3;
+                            stroke-width: 2px;
+                        }
+                    }
+                    Rectangle { width: 28px; height: 28px; border-radius: 4px;
+                        background: expanded ? Palette.gold.with-alpha(0.2) : transparent;
+                        TouchArea { clicked => { root.toggle(line.idx); } }
+                        Text { text: expanded ? "−" : "+"; font-size: 16px + Palette.font-offset; font-weight: 700;
+                            color: expanded ? Palette.gold : Palette.text3;
+                            horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    Rectangle { width: 28px; height: 28px; border-radius: 4px;
+                        background: line.has-recurring ? Palette.blue.with-alpha(0.2) : transparent;
+                        TouchArea { clicked => { root.open-recurring(sec-idx, line.idx, line.has-recurring ? line.recurring-freq : 3); } }
+                        Text { text: "↻"; font-size: 16px + Palette.font-offset; font-weight: 700;
+                            color: line.has-recurring ? Palette.blue : Palette.text3;
+                            horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    Rectangle { width: 28px; height: 28px; border-radius: 4px;
+                        TouchArea { clicked => { root.delete-line(sec-idx, line.idx); } }
+                        Text { text: "x"; font-size: 14px + Palette.font-offset; color: Palette.danger; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    if line.has-debt : Text { text: I18n.deb-badge; font-size: 12px + Palette.font-offset; font-weight: 600; color: Palette.teal; vertical-alignment: center; }
                 }
             }
         }
-        // Sub-panel
         if expanded : SubPanel {
             payments: payments; currency: currency; sec-idx: sec-idx; line-idx: line.idx;
             new-date <=> new-date; new-amount <=> new-amount;
@@ -209,6 +220,7 @@ component Section inherits Rectangle {
     callback update-name(int, int, string); callback delete-line(int, int);
     callback add-line(int); callback delete-pay(int, int, int);
     callback add-pay(int, int, string, string); callback open-recurring(int, int, int);
+    callback toggle-check(int, int);
 
     background: transparent;
     VerticalLayout { spacing: 4px;
@@ -224,12 +236,10 @@ component Section inherits Rectangle {
         if open : VerticalLayout { spacing: 4px;
             HorizontalLayout { padding-left: 12px; padding-right: 8px; spacing: 4px; height: 18px;
                 Rectangle { horizontal-stretch: 1; }
-                Rectangle { width: 56px; }
                 Text { text: I18n.col-bank; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.blue; width: 58px; horizontal-alignment: center; }
                 Text { text: I18n.col-cash; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.amber; width: 58px; horizontal-alignment: center; }
                 Text { text: I18n.card-paid; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.teal; width: 58px; horizontal-alignment: center; }
                 Text { text: I18n.col-left; font-size: 14px + Palette.font-offset; font-weight: 600; color: Palette.gold; width: 52px; horizontal-alignment: center; }
-                Rectangle { width: 28px; }
             }
             for line[i] in lines : LineRow {
                 line: line; currency: currency; expanded: expanded-lines[i];
@@ -242,6 +252,7 @@ component Section inherits Rectangle {
                 delete-pay(s,l,i)    => { root.delete-pay(s,l,i); }
                 add-pay(s,l,d,a)     => { root.add-pay(s,l,d,a); }
                 open-recurring(s,l,f)  => { root.open-recurring(s,l,f); }
+                toggle-check(s,l)    => { root.toggle-check(s,l); }
             }
             Rectangle { height: 38px; border-radius: 10px; border-width: 1px; border-color: Palette.card-border;
                 TouchArea { clicked => { root.add-line(sec-idx); } }
@@ -306,10 +317,11 @@ export component MonthView inherits Rectangle {
     callback add-pay(int, int, string, string);
     callback set-recurring(int, int, int, bool);  // sec, line, freq, include-past
     callback toggle-register-sort();
+    callback toggle-check(int, int);
 
     // Scrollable content
     Flickable {
-        viewport-width: root.width;
+        content-width: root.width;
         width: root.width;
         height: root.height;
 
@@ -366,6 +378,7 @@ export component MonthView inherits Rectangle {
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
                     add-line(i) => { root.add-line(i); } delete-pay(s,l,i) => { root.delete-pay(s,l,i); }
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
+                    toggle-check(s,l) => { root.toggle-check(s,l); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
                 Section { title: I18n.sec-withdrawals; icon: "🏧"; accent: Palette.amber; total-str: sum-sec-withdrawals; currency: currency; open: sections-open[1]; lines: sec1-lines; sec-idx: 1; expanded-lines: sec1-expanded; all-payments: sec1-payments;
@@ -374,6 +387,7 @@ export component MonthView inherits Rectangle {
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
                     add-line(i) => { root.add-line(i); } delete-pay(s,l,i) => { root.delete-pay(s,l,i); }
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
+                    toggle-check(s,l) => { root.toggle-check(s,l); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
                 Section { title: I18n.sec-fixed; icon: "📋"; accent: Palette.blue; total-str: sum-sec-fixed; currency: currency; open: sections-open[2]; lines: sec2-lines; sec-idx: 2; expanded-lines: sec2-expanded; all-payments: sec2-payments;
@@ -382,6 +396,7 @@ export component MonthView inherits Rectangle {
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
                     add-line(i) => { root.add-line(i); } delete-pay(s,l,i) => { root.delete-pay(s,l,i); }
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
+                    toggle-check(s,l) => { root.toggle-check(s,l); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
                 Section { title: I18n.sec-variable; icon: "🛒"; accent: Palette.gold; total-str: sum-sec-variable; currency: currency; open: sections-open[3]; lines: sec3-lines; sec-idx: 3; expanded-lines: sec3-expanded; all-payments: sec3-payments;
@@ -390,6 +405,7 @@ export component MonthView inherits Rectangle {
                     update-name(s,l,v) => { root.update-name(s,l,v); } delete-line(s,l) => { root.delete-line(s,l); }
                     add-line(i) => { root.add-line(i); } delete-pay(s,l,i) => { root.delete-pay(s,l,i); }
                     add-pay(s,l,d,a) => { root.add-pay(s,l,d,a); }
+                    toggle-check(s,l) => { root.toggle-check(s,l); }
                     open-recurring(s,l,f) => { rec-popup-sec = s; rec-popup-line = l; rec-popup-freq = f; rec-popup-past = false; rec-popup-open = true; }
                 }
             }

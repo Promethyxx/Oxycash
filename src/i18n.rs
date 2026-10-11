@@ -48,6 +48,9 @@ fn en() -> HashMap<&'static str, &'static str> {
     m.insert("deb_negotiated","Negotiated"); m.insert("deb_settled","Settled");
     m.insert("deb_add","+ Add debt"); m.insert("deb_rep","Rep"); m.insert("deb_pursuit","N°");
     m.insert("deb_due","Due"); m.insert("deb_neg","Neg"); m.insert("deb_status","Status"); m.insert("deb_date","Date");
+    m.insert("deb_badge","Debt"); m.insert("deb_planned","Planned"); m.insert("deb_paid","Paid");
+    m.insert("deb_left","Left");
+    m.insert("deb_to_month","Add to months");
     // Savings
     m.insert("sav_title","Savings"); m.insert("sav_add_project","+ New project"); m.insert("sav_add_entry","+ Add entry");
     // Expenses
@@ -123,8 +126,11 @@ fn fr() -> HashMap<&'static str, &'static str> {
     m.insert("deb_negotiated","Négocié"); m.insert("deb_settled","Soldées");
     m.insert("deb_add","+ Ajouter une dette"); m.insert("deb_rep","Rep"); m.insert("deb_pursuit","N°");
     m.insert("deb_due","Dû"); m.insert("deb_neg","Nég"); m.insert("deb_status","État"); m.insert("deb_date","Date");
+    m.insert("deb_badge","Dette"); m.insert("deb_planned","Prévu"); m.insert("deb_paid","Payé");
+    m.insert("deb_left","Reste");
+    m.insert("deb_to_month","Ajouter aux mois");
     m.insert("sav_title","Épargne"); m.insert("sav_add_project","+ Nouveau projet"); m.insert("sav_add_entry","+ Entrée");
-    m.insert("exp_title","Frais annuels"); m.insert("exp_name","Poste"); m.insert("exp_total","Total");
+    m.insert("exp_title","Frais annuels"); m.insert("exp_name","Nom"); m.insert("exp_total","Total");
     m.insert("via_title","Viabilité"); m.insert("via_subtitle","Simulation mensuelle par palier de salaire");
     m.insert("via_columns","Colonnes"); m.insert("via_add_col","+ Colonne");
     m.insert("via_generate","▶ Générer"); m.insert("via_clear","Tout supprimer");

@@ -382,7 +382,7 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let mut st = state_ref.lock().unwrap();
             let n: String = new_name.into();
             let old_slug = st.storage.cfg.active.clone();
-            let new_slug = st.storage.rename_profile(&old_slug, &n);
+            let _new_slug = st.storage.rename_profile(&old_slug, &n);
             // If slug changed, update active month key prefix is unaffected
             // (month keys are JAN/FEB/... not slug-based)
             w.set_profile_name(st.storage.active_profile().name.clone().into());

@@ -24,7 +24,7 @@ export struct SavingsEntry {
 }
 
 export component SavingsView inherits Flickable {
-    viewport-width: self.width;
+    content-width: self.width;
     in property <string>          currency: "CHF";
     in property <[SavingsEntry]>  entries:  [];
 

@@ -2,7 +2,7 @@
 // Pure data computations: monthly summary and frais sync.
 use std::collections::HashMap;
 
-use crate::model::{FraisLine, Line, Month, MONTHS};
+use crate::model::{new_debt_id, AppData, FraisLine, Line, Month, MNAMES, MONTHS};
 use crate::state::AppState;
 
 // ── Monthly summary ───────────────────────────────────────────────────────────
@@ -87,4 +87,65 @@ pub fn sync_frais_from_months(state: &mut AppState) {
     state.storage.data.frais.fixes     = to_vec(fixes);
     state.storage.data.frais.ponctuels = to_vec(ponctuels);
     state.storage.data.frais.retraits  = to_vec(retraits);
+}
+
+// ── Debts ─────────────────────────────────────────────────────────────────────
+
+pub struct DebtStats {
+    pub planned: f64,
+    pub paid:    f64,
+}
+
+pub fn debt_stats(data: &AppData, id: &str) -> DebtStats {
+    let mut s = DebtStats { planned: 0.0, paid: 0.0 };
+    if id.is_empty() { return s; }
+    for m in data.months.values() {
+        for lines in [&m.revenus, &m.retraits, &m.fixes, &m.variables] {
+            for l in lines.iter() {
+                if l.debt_id.as_deref() != Some(id) { continue; }
+                s.planned += l.banque + l.cash;
+                s.paid    += l.etat();
+            }
+        }
+    }
+    s
+}
+
+pub fn round2(v: f64) -> f64 { (v * 100.0).round() / 100.0 }
+
+pub fn plan_debt(data: &mut AppData, di: usize, months: &[usize], amounts: &[f64]) -> bool {
+    if di >= data.dettes.len() || months.is_empty() || months.len() != amounts.len() { return false; }
+    if data.dettes[di].id.is_empty() { data.dettes[di].id = new_debt_id(di); }
+    let id   = data.dettes[di].id.clone();
+    let name = if data.dettes[di].creancier.trim().is_empty() { "Debt".to_string() } else { data.dettes[di].creancier.clone() };
+    for (&mi, &amount) in months.iter().zip(amounts.iter()) {
+        let mi = mi % 12;
+        let month = data.months.entry(MONTHS[mi].to_string())
+            .or_insert_with(|| Month { name: MNAMES[mi].to_string(), ..Default::default() });
+        month.variables.push(Line {
+            name: name.clone(), banque: amount, cash: 0.0,
+            payments: vec![], recurring: None, debt_id: Some(id.clone()),
+        });
+        month.variables.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    }
+    true
+}
+
+pub fn rename_debt(data: &mut AppData, id: &str, name: &str) {
+    if id.is_empty() || name.trim().is_empty() { return; }
+    for d in data.dettes.iter_mut() {
+        if d.id == id { d.creancier = name.to_string(); }
+    }
+    for m in data.months.values_mut() {
+        for lines in [&mut m.revenus, &mut m.retraits, &mut m.fixes, &mut m.variables] {
+            let mut touched = false;
+            for l in lines.iter_mut() {
+                if l.debt_id.as_deref() == Some(id) && l.name != name {
+                    l.name = name.to_string();
+                    touched = true;
+                }
+            }
+            if touched { lines.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase())); }
+        }
+    }
 }
