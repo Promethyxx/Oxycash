@@ -4,7 +4,7 @@ use slint::{Global, ModelRc, SharedString, VecModel};
 
 use crate::{AppWindow, DebtItem, ExpenseLine, ExpenseSection, I18n, ProfileItem,
             RegisterEntry, SavingsEntry, SavingsRowItem, ViaColumn, ViaPalier, ViaPalierCell};
-use crate::compute::{compute_summary, debt_stats};
+use crate::compute::{compute_summary, debt_month_amounts, debt_stats};
 use crate::model::{fmt, fmt_sign, FraisLine, Line, MONTHS};
 use crate::state::AppState;
 use crate::ui_helpers::{color_for, hex_color, make_bool_model, make_line_items, make_payment_items};
@@ -245,6 +245,9 @@ pub fn push_debts(window: &AppWindow, state: &AppState) {
 
     let items: Vec<DebtItem> = dettes.iter().enumerate().map(|(i, d)| {
         let ds      = debt_stats(&state.storage.data, &d.id);
+        let amounts: Vec<SharedString> = debt_month_amounts(&state.storage.data, &d.id).iter()
+            .map(|&v| if v > 0.004 { fmt(v).into() } else { SharedString::default() })
+            .collect();
         let target  = if d.solde_ok > 0.0 { d.solde_ok } else { d.solde };
         let left    = target - ds.paid;
         let cleared = ds.paid > 0.0 && left <= 0.005;
@@ -262,6 +265,7 @@ pub fn push_debts(window: &AppWindow, state: &AppState) {
             paid:       fmt(ds.paid).into(),
             left:       fmt(left.max(0.0)).into(),
             level,
+            amounts:    ModelRc::new(VecModel::from(amounts)),
         }
     }).collect();
     window.set_debts_list(ModelRc::new(VecModel::from(items)));
@@ -420,7 +424,7 @@ pub fn push_i18n(window: &AppWindow, lang: &str) {
     set!(set_deb_due,"deb_due"); set!(set_deb_neg,"deb_neg");
     set!(set_deb_status,"deb_status"); set!(set_deb_date,"deb_date");
     set!(set_deb_badge,"deb_badge"); set!(set_deb_planned,"deb_planned"); set!(set_deb_paid,"deb_paid");
-    set!(set_deb_left,"deb_left"); set!(set_deb_to_month,"deb_to_month");
+    set!(set_deb_left,"deb_left"); set!(set_deb_to_month,"deb_to_month"); set!(set_deb_start,"deb_start");
     set!(set_sav_title,"sav_title"); set!(set_sav_add_project,"sav_add_project"); set!(set_sav_add_entry,"sav_add_entry");
     set!(set_exp_title,"exp_title"); set!(set_exp_name,"exp_name"); set!(set_exp_total,"exp_total");
     set!(set_via_title,"via_title"); set!(set_via_subtitle,"via_subtitle");

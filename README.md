@@ -41,9 +41,6 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 ## Roadmap
 ## 🔴 NOW
    - Android UI expenses tab fix
-   - Export debts, savings tab exclusively
-   - deletes ELF both version for Linux and replace them by a flatpak in CICD
-   - Currency in settings
 ## 🟡 NEXT
  - ### Release:
    - Chocolatey

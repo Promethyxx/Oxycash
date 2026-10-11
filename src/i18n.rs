@@ -50,7 +50,11 @@ fn en() -> HashMap<&'static str, &'static str> {
     m.insert("deb_due","Due"); m.insert("deb_neg","Neg"); m.insert("deb_status","Status"); m.insert("deb_date","Date");
     m.insert("deb_badge","Debt"); m.insert("deb_planned","Planned"); m.insert("deb_paid","Paid");
     m.insert("deb_left","Left");
-    m.insert("deb_to_month","Add to months");
+    m.insert("deb_to_month","Apply to months"); m.insert("deb_start","Start month");
+    m.insert("t_updated","Months updated"); m.insert("t_enter_amount","Enter an amount (0 clears)");
+    m.insert("t_nothing","Nothing to export"); m.insert("t_exported","Exported ✓");
+    m.insert("t_imported","Imported"); m.insert("t_invalid","Invalid JSON format");
+    m.insert("t_no_import","Import not available on Android");
     // Savings
     m.insert("sav_title","Savings"); m.insert("sav_add_project","+ New project"); m.insert("sav_add_entry","+ Add entry");
     // Expenses
@@ -128,7 +132,11 @@ fn fr() -> HashMap<&'static str, &'static str> {
     m.insert("deb_due","Dû"); m.insert("deb_neg","Nég"); m.insert("deb_status","État"); m.insert("deb_date","Date");
     m.insert("deb_badge","Dette"); m.insert("deb_planned","Prévu"); m.insert("deb_paid","Payé");
     m.insert("deb_left","Reste");
-    m.insert("deb_to_month","Ajouter aux mois");
+    m.insert("deb_to_month","Appliquer aux mois"); m.insert("deb_start","Mois de départ");
+    m.insert("t_updated","Mois mis à jour"); m.insert("t_enter_amount","Saisir un montant (0 efface)");
+    m.insert("t_nothing","Rien à exporter"); m.insert("t_exported","Exporté ✓");
+    m.insert("t_imported","Importé"); m.insert("t_invalid","Format JSON invalide");
+    m.insert("t_no_import","Import indisponible sur Android");
     m.insert("sav_title","Épargne"); m.insert("sav_add_project","+ Nouveau projet"); m.insert("sav_add_entry","+ Entrée");
     m.insert("exp_title","Frais annuels"); m.insert("exp_name","Nom"); m.insert("exp_total","Total");
     m.insert("via_title","Viabilité"); m.insert("via_subtitle","Simulation mensuelle par palier de salaire");

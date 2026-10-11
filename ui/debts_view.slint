@@ -18,6 +18,7 @@ export struct DebtItem {
     paid: string,
     left: string,
     level: int,
+    amounts: [string],
 }
 
 component MonthAmount inherits Rectangle {
@@ -47,6 +48,25 @@ component MonthAmount inherits Rectangle {
     }
 }
 
+component HeaderBtn inherits Rectangle {
+    in property <string> label;
+    callback clicked();
+    width: 76px;
+    height: 30px;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: Palette.card-border;
+    TouchArea { clicked => { root.clicked(); } }
+    Text {
+        text: label;
+        font-size: 13px + Palette.font-offset;
+        font-weight: 600;
+        color: Palette.text2;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
 component DebtCard inherits Rectangle {
     in property <DebtItem> debt;
     in property <string>   currency;
@@ -55,9 +75,14 @@ component DebtCard inherits Rectangle {
     callback delete(int);
     callback commit-field(int, string, string);
     callback add-to-month(int, string, string);
-    in-out property <string> a0; in-out property <string> a1; in-out property <string> a2; in-out property <string> a3;
-    in-out property <string> a4; in-out property <string> a5; in-out property <string> a6; in-out property <string> a7;
-    in-out property <string> a8; in-out property <string> a9; in-out property <string> a10; in-out property <string> a11;
+    callback apply-recurrence(int, string, string, int, int);
+    in-out property <bool>   rec-open: false;
+    in-out property <string> rec-amount: "";
+    in-out property <int>    rec-fi: 0;
+    in-out property <int>    rec-start: 0;
+    in-out property <string> a0: debt.amounts[0]; in-out property <string> a1: debt.amounts[1]; in-out property <string> a2: debt.amounts[2]; in-out property <string> a3: debt.amounts[3];
+    in-out property <string> a4: debt.amounts[4]; in-out property <string> a5: debt.amounts[5]; in-out property <string> a6: debt.amounts[6]; in-out property <string> a7: debt.amounts[7];
+    in-out property <string> a8: debt.amounts[8]; in-out property <string> a9: debt.amounts[9]; in-out property <string> a10: debt.amounts[10]; in-out property <string> a11: debt.amounts[11];
 
     border-radius: 10px;
     background: Palette.card;
@@ -262,20 +287,125 @@ component DebtCard inherits Rectangle {
             MonthAmount { label: "NOV"; amount <=> a10; }
             MonthAmount { label: "DEC"; amount <=> a11; }
         }
-        Rectangle {
+        HorizontalLayout {
+            spacing: 6px;
             height: 30px;
-            border-radius: 6px;
-            background: Palette.teal;
-            TouchArea {
-                clicked => {
-                    root.add-to-month(debt.idx, ti-creditor.text,
-                        a0 + ";" + a1 + ";" + a2 + ";" + a3 + ";" + a4 + ";" + a5 + ";"
-                        + a6 + ";" + a7 + ";" + a8 + ";" + a9 + ";" + a10 + ";" + a11);
-                    a0 = ""; a1 = ""; a2 = ""; a3 = ""; a4 = ""; a5 = "";
-                    a6 = ""; a7 = ""; a8 = ""; a9 = ""; a10 = ""; a11 = "";
+            Rectangle {
+                horizontal-stretch: 1;
+                border-radius: 6px;
+                background: Palette.teal;
+                TouchArea {
+                    clicked => {
+                        root.add-to-month(debt.idx, ti-creditor.text,
+                            a0 + ";" + a1 + ";" + a2 + ";" + a3 + ";" + a4 + ";" + a5 + ";"
+                            + a6 + ";" + a7 + ";" + a8 + ";" + a9 + ";" + a10 + ";" + a11);
+                    }
+                }
+                Text { text: I18n.deb-to-month; font-size: 14px + Palette.font-offset; font-weight: 700; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
+            }
+            Rectangle {
+                width: 110px;
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: root.rec-open ? Palette.blue : Palette.card-border;
+                background: root.rec-open ? Palette.blue.with-alpha(0.2) : transparent;
+                TouchArea { clicked => { root.rec-open = !root.rec-open; } }
+                Text { text: I18n.rec-title; font-size: 13px + Palette.font-offset; font-weight: 600; color: root.rec-open ? Palette.blue : Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
+            }
+        }
+        if root.rec-open : Rectangle {
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: Palette.blue;
+            VerticalLayout {
+                padding: 10px;
+                spacing: 6px;
+                Text { text: I18n.rec-title; font-size: 15px + Palette.font-offset; font-weight: 700; color: Palette.text; }
+                Rectangle {
+                    height: 30px;
+                    border-radius: 5px;
+                    border-width: 1px;
+                    border-color: Palette.card-border;
+                    background: #00000020;
+                    TextInput {
+                        text <=> root.rec-amount;
+                        font-size: 14px + Palette.font-offset;
+                        color: Palette.teal;
+                        horizontal-alignment: center;
+                        input-type: decimal;
+                        vertical-alignment: center;
+                    }
+                    if root.rec-amount == "" : Text {
+                        text: I18n.pay-amount;
+                        font-size: 13px + Palette.font-offset;
+                        color: Palette.text3;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+                Text { text: I18n.rec-frequency; font-size: 14px + Palette.font-offset; color: Palette.text2; }
+                for lbl[i] in [I18n.rec-every-1, I18n.rec-every-2, I18n.rec-every-3, I18n.rec-every-6, I18n.rec-every-12] : Rectangle {
+                    height: 26px;
+                    background: transparent;
+                    TouchArea { clicked => { root.rec-fi = i; } }
+                    HorizontalLayout {
+                        spacing: 10px;
+                        padding-left: 4px;
+                        Rectangle {
+                            width: 20px; height: 20px; border-radius: 10px; border-width: 2px;
+                            border-color: root.rec-fi == i ? Palette.teal : Palette.text3;
+                            if root.rec-fi == i : Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Palette.teal; x: 3px; y: 3px; }
+                        }
+                        Text { text: lbl; font-size: 15px + Palette.font-offset; color: Palette.text; vertical-alignment: center; }
+                    }
+                }
+                Text { text: I18n.deb-start; font-size: 14px + Palette.font-offset; color: Palette.text2; }
+                HorizontalLayout {
+                    spacing: 4px;
+                    for mn[i] in ["JAN", "FEB", "MAR", "APR", "MAI", "JUN"] : Rectangle {
+                        horizontal-stretch: 1;
+                        height: 28px;
+                        border-radius: 5px;
+                        border-width: 1px;
+                        border-color: root.rec-start == i ? Palette.teal : Palette.card-border;
+                        background: root.rec-start == i ? Palette.teal.with-alpha(0.2) : transparent;
+                        TouchArea { clicked => { root.rec-start = i; } }
+                        Text { text: mn; font-size: 12px + Palette.font-offset; font-weight: 600; color: root.rec-start == i ? Palette.teal : Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 4px;
+                    for mn[i] in ["JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] : Rectangle {
+                        horizontal-stretch: 1;
+                        height: 28px;
+                        border-radius: 5px;
+                        border-width: 1px;
+                        border-color: root.rec-start == i + 6 ? Palette.teal : Palette.card-border;
+                        background: root.rec-start == i + 6 ? Palette.teal.with-alpha(0.2) : transparent;
+                        TouchArea { clicked => { root.rec-start = i + 6; } }
+                        Text { text: mn; font-size: 12px + Palette.font-offset; font-weight: 600; color: root.rec-start == i + 6 ? Palette.teal : Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    Rectangle {
+                        horizontal-stretch: 1; height: 34px; border-radius: 8px;
+                        TouchArea { clicked => { root.rec-open = false; } }
+                        Text { text: I18n.rec-cancel; font-size: 14px + Palette.font-offset; color: Palette.text2; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    Rectangle {
+                        horizontal-stretch: 1; height: 34px; border-radius: 8px; background: Palette.blue;
+                        TouchArea {
+                            clicked => {
+                                root.apply-recurrence(debt.idx, ti-creditor.text, root.rec-amount,
+                                    [1, 2, 3, 6, 12][root.rec-fi], root.rec-start);
+                                root.rec-open = false;
+                            }
+                        }
+                        Text { text: I18n.rec-apply; font-size: 14px + Palette.font-offset; font-weight: 700; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
+                    }
                 }
             }
-            Text { text: I18n.deb-to-month; font-size: 14px + Palette.font-offset; font-weight: 700; color: #1a1a1a; horizontal-alignment: center; vertical-alignment: center; }
         }
     }
 }
@@ -293,16 +423,26 @@ export component DebtsView inherits Flickable {
     callback update-debt-field(int, string, string);  // idx, field, value
     callback commit-debt-field(int, string, string);
     callback add-debt-to-month(int, string, string);
+    callback apply-debt-recurrence(int, string, string, int, int);
+    callback export-debts();
+    callback import-debts();
 
     VerticalLayout {
         padding: 14px;
         spacing: 10px;
 
-        Text {
-            text: I18n.deb-title;
-            font-size: 22px + Palette.font-offset;
-            font-weight: 700;
-            color: Palette.text;
+        HorizontalLayout {
+            spacing: 6px;
+            Text {
+                text: I18n.deb-title;
+                font-size: 22px + Palette.font-offset;
+                font-weight: 700;
+                color: Palette.text;
+                horizontal-stretch: 1;
+                vertical-alignment: center;
+            }
+            HeaderBtn { label: I18n.cfg-export; clicked => { root.export-debts(); } }
+            HeaderBtn { label: I18n.cfg-import; clicked => { root.import-debts(); } }
         }
 
         // Summary
@@ -346,6 +486,7 @@ export component DebtsView inherits Flickable {
             commit-field(idx, field, val) => { root.commit-debt-field(idx, field, val); }
             delete(idx) => { root.delete-debt(idx); }
             add-to-month(idx, c, a) => { root.add-debt-to-month(idx, c, a); }
+            apply-recurrence(idx, c, a, f, s) => { root.apply-debt-recurrence(idx, c, a, f, s); }
         }
 
         // Add button

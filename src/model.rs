@@ -423,3 +423,39 @@ pub fn fmt_sign(n: f64) -> String {
 pub fn today() -> String {
     Local::now().format("%Y-%m-%d").to_string()
 }
+
+// --- Partial export / import (debts, savings)
+const DEBTS_KIND:   &str = "oxycash-debts";
+const SAVINGS_KIND: &str = "oxycash-savings";
+
+#[derive(Serialize, Deserialize)]
+struct DebtsExport {
+    kind: String,
+    dettes: Vec<Dette>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct SavingsExport {
+    kind: String,
+    savings: Vec<SavingsProject>,
+}
+
+pub fn debts_to_json(list: &[Dette]) -> String {
+    let e = DebtsExport { kind: DEBTS_KIND.to_string(), dettes: list.to_vec() };
+    serde_json::to_string_pretty(&e).unwrap_or_default()
+}
+
+pub fn debts_from_json(raw: &str) -> Option<Vec<Dette>> {
+    let e: DebtsExport = serde_json::from_str(raw).ok()?;
+    if e.kind == DEBTS_KIND { Some(e.dettes) } else { None }
+}
+
+pub fn savings_to_json(list: &[SavingsProject]) -> String {
+    let e = SavingsExport { kind: SAVINGS_KIND.to_string(), savings: list.to_vec() };
+    serde_json::to_string_pretty(&e).unwrap_or_default()
+}
+
+pub fn savings_from_json(raw: &str) -> Option<Vec<SavingsProject>> {
+    let e: SavingsExport = serde_json::from_str(raw).ok()?;
+    if e.kind == SAVINGS_KIND { Some(e.savings) } else { None }
+}

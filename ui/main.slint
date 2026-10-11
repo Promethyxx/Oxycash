@@ -208,6 +208,11 @@ export component AppWindow inherits Window {
     callback set-recurring(int, int, int, bool);
     callback toggle-check(int, int);
     callback add-debt-to-month(int, string, string);
+    callback apply-debt-recurrence(int, string, string, int, int);
+    callback export-debts();
+    callback import-debts();
+    callback export-savings();
+    callback import-savings();
     callback toggle-register-sort();
     callback add-debt();
     callback delete-debt(int);
@@ -431,11 +436,16 @@ export component AppWindow inherits Window {
                 update-debt-field(idx, field, val) => { root.update-debt-field(idx, field, val); }
                 commit-debt-field(idx, field, val) => { root.commit-debt-field(idx, field, val); }
                 add-debt-to-month(idx, c, a) => { root.add-debt-to-month(idx, c, a); }
+                apply-debt-recurrence(idx, c, a, f, s) => { root.apply-debt-recurrence(idx, c, a, f, s); }
+                export-debts => { root.export-debts(); }
+                import-debts => { root.import-debts(); }
             }
             if current-tab == Tab.Savings   : SavingsView {
                 currency: currency;
                 entries:  savings-list;
                 add-project              => { root.add-saving(); }
+                export-savings           => { root.export-savings(); }
+                import-savings           => { root.import-savings(); }
                 delete-project(idx)      => { root.delete-saving(idx); }
                 update-project-field(idx, field, val) => { root.update-saving-field(idx, field, val); }
                 toggle-project(idx)      => { root.toggle-saving(idx); }

@@ -23,12 +23,33 @@ export struct SavingsEntry {
     rows: [SavingsRowItem],
 }
 
+component HeaderBtn inherits Rectangle {
+    in property <string> label;
+    callback clicked();
+    width: 76px;
+    height: 30px;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: Palette.card-border;
+    TouchArea { clicked => { root.clicked(); } }
+    Text {
+        text: label;
+        font-size: 13px + Palette.font-offset;
+        font-weight: 600;
+        color: Palette.text2;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
 export component SavingsView inherits Flickable {
     content-width: self.width;
     in property <string>          currency: "CHF";
     in property <[SavingsEntry]>  entries:  [];
 
     callback add-project();
+    callback export-savings();
+    callback import-savings();
     callback delete-project(int);
     callback update-project-field(int, string, string);  // proj-idx, field, value
     callback toggle-project(int);
@@ -40,11 +61,18 @@ export component SavingsView inherits Flickable {
         padding: 14px;
         spacing: 10px;
 
-        Text {
-            text: I18n.sav-title;
-            font-size: 22px + Palette.font-offset;
-            font-weight: 700;
-            color: Palette.text;
+        HorizontalLayout {
+            spacing: 6px;
+            Text {
+                text: I18n.sav-title;
+                font-size: 22px + Palette.font-offset;
+                font-weight: 700;
+                color: Palette.text;
+                horizontal-stretch: 1;
+                vertical-alignment: center;
+            }
+            HeaderBtn { label: I18n.cfg-export; clicked => { root.export-savings(); } }
+            HeaderBtn { label: I18n.cfg-import; clicked => { root.import-savings(); } }
         }
 
         for proj in entries : Rectangle {

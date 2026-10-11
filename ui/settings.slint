@@ -315,6 +315,31 @@ export component SettingsView inherits Flickable {
         // ── Currency ─────────────────────────
         Card {
             title: I18n.cfg-currency;
+            for row[r] in [0, 1] : HorizontalLayout {
+                spacing: 4px;
+                for opt[k] in (r == 0 ? ["$", "€", "£", "¥", "CHF"] : ["CNY", "AUD", "CAD", "HKD", "NZD"]) : Rectangle {
+                    horizontal-stretch: 1;
+                    height: 34px;
+                    border-radius: 6px;
+                    border-width: 1px;
+                    border-color: root.currency-edit == opt ? Palette.gold : Palette.card-border;
+                    background: root.currency-edit == opt ? Palette.gold.with-alpha(0.2) : transparent;
+                    TouchArea {
+                        clicked => {
+                            root.currency-edit = opt;
+                            root.save-currency();
+                        }
+                    }
+                    Text {
+                        text: opt;
+                        font-size: 15px + Palette.font-offset;
+                        font-weight: 600;
+                        color: root.currency-edit == opt ? Palette.gold : Palette.text;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
             HorizontalLayout {
                 spacing: 8px; height: 36px;
                 Rectangle {

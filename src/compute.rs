@@ -2,7 +2,7 @@
 // Pure data computations: monthly summary and frais sync.
 use std::collections::HashMap;
 
-use crate::model::{new_debt_id, AppData, FraisLine, Line, Month, MNAMES, MONTHS};
+use crate::model::{new_debt_id, AppData, Dette, FraisLine, Line, Month, MNAMES, MONTHS};
 use crate::state::AppState;
 
 // ── Monthly summary ───────────────────────────────────────────────────────────
@@ -113,22 +113,89 @@ pub fn debt_stats(data: &AppData, id: &str) -> DebtStats {
 
 pub fn round2(v: f64) -> f64 { (v * 100.0).round() / 100.0 }
 
-pub fn plan_debt(data: &mut AppData, di: usize, months: &[usize], amounts: &[f64]) -> bool {
-    if di >= data.dettes.len() || months.is_empty() || months.len() != amounts.len() { return false; }
+pub fn debt_month_amounts(data: &AppData, id: &str) -> [f64; 12] {
+    let mut out = [0.0; 12];
+    if id.is_empty() { return out; }
+    for (mi, &mk) in MONTHS.iter().enumerate() {
+        if let Some(m) = data.months.get(mk) {
+            for lines in [&m.revenus, &m.retraits, &m.fixes, &m.variables] {
+                for l in lines.iter() {
+                    if l.debt_id.as_deref() == Some(id) { out[mi] += l.banque + l.cash; }
+                }
+            }
+        }
+    }
+    out
+}
+
+pub fn set_debt_months(data: &mut AppData, di: usize, amounts: &[f64; 12]) -> bool {
+    if di >= data.dettes.len() { return false; }
     if data.dettes[di].id.is_empty() { data.dettes[di].id = new_debt_id(di); }
     let id   = data.dettes[di].id.clone();
     let name = if data.dettes[di].creancier.trim().is_empty() { "Debt".to_string() } else { data.dettes[di].creancier.clone() };
-    for (&mi, &amount) in months.iter().zip(amounts.iter()) {
-        let mi = mi % 12;
+    let current = debt_month_amounts(data, &id);
+    for mi in 0..12 {
+        let target = round2(amounts[mi]).max(0.0);
+        if (target - round2(current[mi])).abs() < 0.005 { continue; }
         let month = data.months.entry(MONTHS[mi].to_string())
             .or_insert_with(|| Month { name: MNAMES[mi].to_string(), ..Default::default() });
-        month.variables.push(Line {
-            name: name.clone(), banque: amount, cash: 0.0,
-            payments: vec![], recurring: None, debt_id: Some(id.clone()),
-        });
-        month.variables.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        for lines in [&mut month.revenus, &mut month.retraits, &mut month.fixes, &mut month.variables] {
+            lines.retain(|l| l.debt_id.as_deref() != Some(id.as_str()) || !l.payments.is_empty());
+        }
+        let mut kept = 0.0;
+        for lines in [&month.revenus, &month.retraits, &month.fixes, &month.variables] {
+            for l in lines.iter() {
+                if l.debt_id.as_deref() == Some(id.as_str()) { kept += l.banque + l.cash; }
+            }
+        }
+        let need = round2(target - kept);
+        if need > 0.005 {
+            month.variables.push(Line {
+                name: name.clone(), banque: need, cash: 0.0,
+                payments: vec![], recurring: None, debt_id: Some(id.clone()),
+            });
+            month.variables.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        }
     }
     true
+}
+
+pub fn recurrence_amounts(data: &AppData, di: usize, amount: f64, freq: usize, start: usize) -> Option<[f64; 12]> {
+    if di >= data.dettes.len() || freq == 0 || start >= 12 || !(amount >= 0.0) { return None; }
+    let d = &data.dettes[di];
+    let mut out = debt_month_amounts(data, &d.id);
+    let target = if d.solde_ok > 0.0 { d.solde_ok } else { d.solde };
+    let before: f64 = out[..start].iter().sum();
+    let mut remaining = if target > 0.0 { round2(target - before) } else { f64::MAX };
+    for v in out[start..].iter_mut() { *v = 0.0; }
+    if amount < 0.005 { return Some(out); }
+    let mut mi = start;
+    while mi < 12 && remaining > 0.005 {
+        let v = round2(amount.min(remaining));
+        out[mi] = v;
+        remaining = round2(remaining - v);
+        mi += freq;
+    }
+    Some(out)
+}
+
+pub fn debts_for_export(data: &AppData) -> Vec<Dette> {
+    data.dettes.iter().filter_map(|d| {
+        let paid   = debt_stats(data, &d.id).paid;
+        let target = if d.solde_ok > 0.0 { d.solde_ok } else { d.solde };
+        let left   = round2(target - paid);
+        if left <= 0.005 { return None; }
+        Some(Dette {
+            id: String::new(),
+            rep: d.rep.clone(),
+            creancier: d.creancier.clone(),
+            poursuite: d.poursuite.clone(),
+            solde: left,
+            solde_ok: 0.0,
+            etat: d.etat.clone(),
+            date: d.date.clone(),
+        })
+    }).collect()
 }
 
 pub fn rename_debt(data: &mut AppData, id: &str, name: &str) {

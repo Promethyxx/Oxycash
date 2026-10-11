@@ -4,11 +4,20 @@ use slint::ComponentHandle;
 use std::sync::{Arc, Mutex};
 
 use crate::AppWindow;
-use crate::compute::{plan_debt, rename_debt, round2, sync_frais_from_months};
-use crate::model::{new_debt_id, Dette, SavingsProject, SavingsRow, ViabiliteColonne, ViabilitePalier};
+use crate::i18n::get_translations;
+use crate::compute::{debts_for_export, recurrence_amounts, rename_debt, round2, set_debt_months, sync_frais_from_months};
+use crate::model::{debts_from_json, debts_to_json, new_debt_id, savings_from_json, savings_to_json, Dette, SavingsProject, SavingsRow, ViabiliteColonne, ViabilitePalier};
 use crate::push::{push_debts, push_month, push_savings, push_viability};
 use crate::state::AppState;
 use crate::ui_helpers::show_toast;
+
+fn tr(lang: &str, key: &str) -> String {
+    get_translations(lang).get(key).copied().unwrap_or(key).to_string()
+}
+
+fn lang_of(state: &Arc<Mutex<AppState>>) -> String {
+    state.lock().unwrap().storage.cfg.lang.clone()
+}
 
 fn set_debt_field(st: &mut AppState, i: usize, f: &str, v: String) -> bool {
     if i >= st.storage.data.dettes.len() { return false; }
@@ -33,6 +42,44 @@ fn set_debt_field(st: &mut AppState, i: usize, f: &str, v: String) -> bool {
         sync_frais_from_months(st);
     }
     true
+}
+
+#[cfg(not(target_os = "android"))]
+fn save_export(w: &AppWindow, lang: &str, fname: &str, json: &str) {
+    let path = rfd::FileDialog::new()
+        .set_file_name(fname)
+        .add_filter("JSON", &["json"])
+        .save_file();
+    if let Some(p) = path {
+        match std::fs::write(&p, json) {
+            Ok(_)  => show_toast(w, &tr(lang, "t_exported")),
+            Err(e) => show_toast(w, &format!("Error: {}", e)),
+        }
+    }
+}
+
+#[cfg(target_os = "android")]
+fn save_export(w: &AppWindow, lang: &str, fname: &str, json: &str) {
+    let path = dirs::data_local_dir().unwrap_or_default().join(fname);
+    match std::fs::write(&path, json) {
+        Ok(_)  => show_toast(w, &tr(lang, "t_exported")),
+        Err(e) => show_toast(w, &format!("Error: {}", e)),
+    }
+}
+
+#[cfg(not(target_os = "android"))]
+fn pick_json(w: &AppWindow, lang: &str) -> Option<String> {
+    let p = rfd::FileDialog::new().add_filter("JSON", &["json"]).pick_file()?;
+    match std::fs::read_to_string(&p) {
+        Ok(raw) => Some(raw),
+        Err(e)  => { show_toast(w, &format!("Error: {}", e)); None }
+    }
+}
+
+#[cfg(target_os = "android")]
+fn pick_json(w: &AppWindow, lang: &str) -> Option<String> {
+    show_toast(w, &tr(lang, "t_no_import"));
+    None
 }
 
 pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
@@ -110,17 +157,15 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             let mut st = state_ref.lock().unwrap();
             let i = idx as usize;
             if i >= st.storage.data.dettes.len() { return; }
-            let mut months: Vec<usize> = vec![];
-            let mut values: Vec<f64>   = vec![];
+            let mut values = [0.0f64; 12];
             for (m, part) in amounts.as_str().split(';').enumerate().take(12) {
                 if let Ok(v) = part.trim().replace(',', ".").parse::<f64>() {
-                    if v > 0.0 { months.push(m); values.push(round2(v)); }
+                    if v.is_finite() { values[m] = round2(v.max(0.0)); }
                 }
             }
-            if months.is_empty() { show_toast(&w, "Enter amounts"); return; }
             let name = creditor.trim().to_string();
             if !name.is_empty() { st.storage.data.dettes[i].creancier = name.clone(); }
-            plan_debt(&mut st.storage.data, i, &months, &values);
+            set_debt_months(&mut st.storage.data, i, &values);
             let id = st.storage.data.dettes[i].id.clone();
             if !name.is_empty() { rename_debt(&mut st.storage.data, &id, &name); }
             st.lines_expanded[3] = vec![];
@@ -129,11 +174,128 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
             st.storage.save();
             push_month(&w, &st);
             push_debts(&w, &st);
-            show_toast(&w, "Added to month");
+            let msg = tr(&st.storage.cfg.lang, "t_updated");
+            show_toast(&w, &msg);
+        });
+    }
+
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_apply_debt_recurrence(move |idx, creditor, amount, freq, start| {
+            let w = ww.unwrap();
+            let mut st = state_ref.lock().unwrap();
+            let i = idx as usize;
+            let amt = match amount.as_str().trim().replace(',', ".").parse::<f64>() {
+                Ok(v) if v.is_finite() => v,
+                _ => {
+                    let msg = tr(&st.storage.cfg.lang, "t_enter_amount");
+                    show_toast(&w, &msg);
+                    return;
+                }
+            };
+            let name = creditor.trim().to_string();
+            if i < st.storage.data.dettes.len() && !name.is_empty() {
+                st.storage.data.dettes[i].creancier = name.clone();
+            }
+            if i < st.storage.data.dettes.len() && st.storage.data.dettes[i].id.is_empty() {
+                st.storage.data.dettes[i].id = new_debt_id(i);
+            }
+            let Some(values) = recurrence_amounts(&st.storage.data, i, round2(amt), freq.max(1) as usize, start.max(0) as usize) else {
+                let msg = tr(&st.storage.cfg.lang, "t_enter_amount");
+                show_toast(&w, &msg);
+                return;
+            };
+            set_debt_months(&mut st.storage.data, i, &values);
+            let id = st.storage.data.dettes[i].id.clone();
+            if !name.is_empty() { rename_debt(&mut st.storage.data, &id, &name); }
+            st.lines_expanded[3] = vec![];
+            st.ensure_expanded();
+            sync_frais_from_months(&mut st);
+            st.storage.save();
+            push_month(&w, &st);
+            push_debts(&w, &st);
+            let msg = tr(&st.storage.cfg.lang, "t_updated");
+            show_toast(&w, &msg);
+        });
+    }
+
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_export_debts(move || {
+            let w = ww.unwrap();
+            let st = state_ref.lock().unwrap();
+            let list  = debts_for_export(&st.storage.data);
+            let fname = format!("oxycash_debts_{}.json", st.storage.cfg.active);
+            let lang  = st.storage.cfg.lang.clone();
+            drop(st);
+            if list.is_empty() { show_toast(&w, &tr(&lang, "t_nothing")); return; }
+            save_export(&w, &lang, &fname, &debts_to_json(&list));
+        });
+    }
+
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_import_debts(move || {
+            let w = ww.unwrap();
+            let lang = lang_of(&state_ref);
+            let Some(raw) = pick_json(&w, &lang) else { return; };
+            match debts_from_json(&raw) {
+                Some(list) if !list.is_empty() => {
+                    let mut st = state_ref.lock().unwrap();
+                    let n = list.len();
+                    for mut d in list {
+                        d.id = new_debt_id(st.storage.data.dettes.len());
+                        st.storage.data.dettes.push(d);
+                    }
+                    st.storage.save();
+                    push_debts(&w, &st);
+                    show_toast(&w, &format!("{} {} ✓", tr(&st.storage.cfg.lang, "t_imported"), n));
+                }
+                _ => show_toast(&w, &tr(&lang, "t_invalid")),
+            }
         });
     }
 
     // ── Savings ───────────────────────────────────────────────────────────────
+
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_export_savings(move || {
+            let w = ww.unwrap();
+            let st = state_ref.lock().unwrap();
+            let list  = st.storage.data.epargne.savings.clone();
+            let fname = format!("oxycash_savings_{}.json", st.storage.cfg.active);
+            let lang  = st.storage.cfg.lang.clone();
+            drop(st);
+            if list.is_empty() { show_toast(&w, &tr(&lang, "t_nothing")); return; }
+            save_export(&w, &lang, &fname, &savings_to_json(&list));
+        });
+    }
+
+    {
+        let state_ref = state.clone();
+        let ww = window.as_weak();
+        window.on_import_savings(move || {
+            let w = ww.unwrap();
+            let lang = lang_of(&state_ref);
+            let Some(raw) = pick_json(&w, &lang) else { return; };
+            match savings_from_json(&raw) {
+                Some(list) if !list.is_empty() => {
+                    let mut st = state_ref.lock().unwrap();
+                    let n = list.len();
+                    st.storage.data.epargne.savings.extend(list);
+                    st.storage.save();
+                    push_savings(&w, &st);
+                    show_toast(&w, &format!("{} {} ✓", tr(&st.storage.cfg.lang, "t_imported"), n));
+                }
+                _ => show_toast(&w, &tr(&lang, "t_invalid")),
+            }
+        });
+    }
 
     {
         let state_ref = state.clone();
