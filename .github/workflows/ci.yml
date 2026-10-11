@@ -39,6 +39,7 @@ jobs:
 
   build-flatpak:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -87,6 +88,10 @@ jobs:
           - --filesystem=home
         build-options:
           append-path: /usr/lib/sdk/rust-stable/bin
+          cflags: -g
+          cflags-override: true
+          cxxflags: -g
+          cxxflags-override: true
           env:
             CARGO_HOME: /run/build/Oxycash/cargo
         cleanup:
