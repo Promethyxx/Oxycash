@@ -281,7 +281,7 @@ component DebtCard inherits Rectangle {
 }
 
 export component DebtsView inherits Flickable {
-    viewport-width: self.width;
+    content-width: self.width;
     in property <string>     currency:     "CHF";
     in property <string>     total-due:    "0";
     in property <string>     total-neg:    "0";

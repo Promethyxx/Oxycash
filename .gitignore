@@ -3,3 +3,4 @@ keystore.jks
 assets/res/.idea/*
 oxycash.jks
 .claude/
+fix_warnings.py

@@ -35,6 +35,7 @@ impl Storage {
             .unwrap_or_else(|| panic!("no profiles in config"))
     }
 
+    #[allow(dead_code)]
     pub fn active_profile_mut(&mut self) -> &mut Profile {
         let slug = self.cfg.active.clone();
         if let Some(i) = self.cfg.profiles.iter().position(|p| p.slug == slug) {
@@ -155,6 +156,7 @@ impl Storage {
 
     // ── DAV test ──────────────────────────────────────────────────────────────
 
+    #[allow(dead_code)]
     pub fn test_dav(&self) -> (bool, String) {
         let dp = self.cfg.dav_profile(&self.cfg.active);
         match make_client() {
@@ -163,6 +165,7 @@ impl Storage {
         }
     }
 
+    #[allow(dead_code)]
     pub fn test_dav2(&self) -> (bool, String) {
         if !self.cfg.has_dav2() { return (false, "WebDAV secondaire non configuré".into()); }
         let dp = self.cfg.dav2_profile(&self.cfg.active);
