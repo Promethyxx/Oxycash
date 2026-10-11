@@ -42,7 +42,7 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 ## 🔴 NOW
    - Android UI
    - Export debts, savings tab exclusively
-   - deletes ELF both version for Linux and replace them by a flatpak
+   - deletes ELF both version for Linux and replace them by a flatpak in CICD
 ## 🟡 NEXT
  - ### Release:
    - Chocolatey
