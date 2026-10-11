@@ -38,9 +38,8 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 ## Roadmap
 ## 🔴 NOW
    - Android UI
-   - Add a tick button
-   - Link the “Debts” tab to monthly expenses
-   - Export only a tab
+   - Export debts, savings tab exclusively
+   - deletes ELF both version for Linux and replace them by a flatpak
 ## 🟡 NEXT
  - ### Release:
    - Chocolatey
