@@ -40,7 +40,6 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 ---
 ## Roadmap
 ## 🔴 NOW
-   - Android UI expenses tab fix
 ## 🟡 NEXT
  - ### Release:
    - Chocolatey
