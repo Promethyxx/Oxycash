@@ -68,7 +68,7 @@ fn save_export(w: &AppWindow, lang: &str, fname: &str, json: &str) {
 }
 
 #[cfg(not(target_os = "android"))]
-fn pick_json(w: &AppWindow, lang: &str) -> Option<String> {
+fn pick_json(w: &AppWindow, _lang: &str) -> Option<String> {
     let p = rfd::FileDialog::new().add_filter("JSON", &["json"]).pick_file()?;
     match std::fs::read_to_string(&p) {
         Ok(raw) => Some(raw),

@@ -64,9 +64,9 @@ component ExpenseTable inherits Rectangle {
     in property <color> accent;
     in property <length> available-width: 800px;
 
-    // col-w: fill available space, min 58px
-    property <length> col-w: max(58px, (available-width - 90px - 20px) / 13);
-    property <length> table-w: 90px + 13 * col-w;
+    property <length> tot-w: 86px;
+    property <length> col-w: max(58px, (available-width - 90px - 20px - tot-w) / 12);
+    property <length> table-w: 90px + 12 * col-w + tot-w;
     property <length> row-h: 28px;
 
     border-radius: 10px;
@@ -88,7 +88,6 @@ component ExpenseTable inherits Rectangle {
                 font-weight: 700;
                 color: Palette.text;
                 vertical-alignment: center;
-                // Calcul pour s'arrêter pile au début de la 13ème colonne (Total)
                 width: 90px + 12 * col-w;
                 overflow: elide;
             }
@@ -131,7 +130,7 @@ component ExpenseTable inherits Rectangle {
                     Cell { txt: "O"; cell-color: Palette.text3; width: col-w; }
                     Cell { txt: "N"; cell-color: Palette.text3; width: col-w; }
                     Cell { txt: "D"; cell-color: Palette.text3; width: col-w; }
-                    Cell { txt: I18n.exp-total; cell-color: Palette.text3; width: col-w; bold: true; }
+                    Cell { txt: I18n.exp-total; cell-color: Palette.text3; width: tot-w; bold: true; }
                 }
 
                 // Data rows
@@ -151,7 +150,7 @@ component ExpenseTable inherits Rectangle {
                     Cell { txt: line.m9  > 0.0 ? line.m9  : ""; cell-color: accent; width: col-w; }
                     Cell { txt: line.m10 > 0.0 ? line.m10 : ""; cell-color: accent; width: col-w; }
                     Cell { txt: line.m11 > 0.0 ? line.m11 : ""; cell-color: accent; width: col-w; }
-                    Cell { txt: line.total > 0.0 ? line.total : ""; cell-color: accent; width: col-w; bold: true; }
+                    Cell { txt: line.total > 0.0 ? line.total : ""; cell-color: accent; width: tot-w; bold: true; }
                 }
             }
         }
@@ -164,8 +163,7 @@ export component ExpensesView inherits Flickable {
     in property <ExpenseSection> occasional: { label: "", lines: [], total: 0.0 };
     in property <ExpenseSection> withdrawals:{ label: "",lines: [], total: 0.0 };
 
-    // Largeur minimale du tableau : colonne nom + 13 colonnes de 58px
-    property <length> min-table-w: 90px + 13 * 58px + 28px; // 28px = padding x2
+    property <length> min-table-w: 90px + 12 * 58px + 86px + 28px;
     content-width:  max(self.width, min-table-w);
     content-height: 36px + 14px
         + (32px + 1px + 26px + fixed.lines.length * 28px + 24px)
