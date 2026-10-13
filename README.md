@@ -12,15 +12,12 @@
 | Oxycash | |
 |:---|:---:|
 | Android | ✅ |
-| Linux ARM64 | ✅ |
 | Linux x64 | ✅ |
 | Windows x64 | ✅ |
 ---
 ## Building from source
 ### Android
 * cargo apk build
-### Linux Arm
-* cargo build --features="desktop" --target=aarch64-unknown-linux-gnu
 ### Linux64, Windows
 * cargo build --features="desktop"
 ---

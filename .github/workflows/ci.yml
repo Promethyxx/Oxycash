@@ -46,10 +46,6 @@ jobs:
             arch: x86_64
             artifact_name: Oxycash_Lin_x64.flatpak
             label: Lin_x64
-          - os: ubuntu-24.04-arm
-            arch: aarch64
-            artifact_name: Oxycash_Lin_ARM.flatpak
-            label: Lin_arm64
     runs-on: ${{ matrix.os }}
     name: Build Flatpak ${{ matrix.label }}
     steps:
@@ -214,16 +210,14 @@ jobs:
           | Platform | Oxycash | Name |
           |---|:---:|---|
           | Android | ✅ | Oxycash_And.apk |
-          | Linux ARM64 | ✅ | Oxycash_Lin_ARM.flatpak |
           | Linux x64 | ✅ | Oxycash_Lin_x64.flatpak |
           | Windows x64 | ✅ | Oxycash_Win_x64.exe |
 
           ## Linux install
-          `flatpak install --user Oxycash_Lin_x64.flatpak` (or `Oxycash_Lin_ARM.flatpak` on ARM64)
+          `flatpak install --user Oxycash_Lin_x64.flatpak`
         files: |
           Oxycash_Win_x64.exe
           Oxycash_Lin_x64.flatpak
-          Oxycash_Lin_ARM.flatpak
           Oxycash_And.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
