@@ -27,7 +27,7 @@ tokio = { version = "1.54", features = ["rt", "rt-multi-thread", "macros"] }
 
 # --- Desktop (Windows + Linux) ---
 [target.'cfg(not(target_os = "android"))'.dependencies]
-rfd   = "0.17"
+rfd   = "0.18"
 slint = { version = "1.18", features = ["backend-winit", "renderer-femtovg"] }
 
 # --- Android ---
