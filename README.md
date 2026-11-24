@@ -35,13 +35,19 @@
 This project is licensed under the GNU General Public License v3.0 — see Licenses.md for details.
 
 ---
-## Roadmap
-## 🔴 NOW
- - Add option to disable tabs
+# Roadmap
+
+## 🟢 IN PROGRESS
+- Add option to disable tabs
+- Replace unmaintained crates with maintained alternatives
+- Add CHANGELOG.md
+  - Configure git-cliff
+- Add deny.toml
+- Add SECURITY.md
+
 ## 🟡 NEXT
- - ### Release:
-   - Chocolatey
-   - MS Store
-   - Winget
+- WinGet release
+
 ## 🔵 LATER
+- Automate WinGet updates through CI pull requests
 ---
