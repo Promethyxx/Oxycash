@@ -38,16 +38,20 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 # Roadmap
 
 ## 🟢 IN PROGRESS
-- Add option to disable tabs
-- Replace unmaintained crates with maintained alternatives
-- Add CHANGELOG.md
-  - Configure git-cliff
-- Add deny.toml
-- Add SECURITY.md
+- feat: 
+  - Add option to disable tabs
+- chore:
+  - Replace unmaintained crates with maintained alternatives
+  - Add deny.toml
+- docs:
+  - Add CHANGELOG.md
+    - Configure git-cliff
+  - Add SECURITY.md
 
 ## 🟡 NEXT
 - WinGet release
 
 ## 🔵 LATER
-- Automate WinGet updates through CI pull requests
+- ci:  
+  - Automate WinGet updates through CI pull requests
 ---
