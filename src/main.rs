@@ -43,6 +43,7 @@ fn run() {
     {
         let mut st = state.lock().unwrap();
         sync_frais_from_months(&mut st);
+        window.set_app_version(env!("CARGO_PKG_VERSION").into());
         window.set_current_tab(month_key_to_tab(&st.current_month));
         window.set_profile_name(st.storage.active_profile().name.clone().into());
         window.set_currency(st.storage.cfg.currency.clone().into());

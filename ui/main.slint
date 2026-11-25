@@ -99,6 +99,7 @@ export component AppWindow inherits Window {
     min-height: 480px;
 
     in-out property <Tab>   current-tab:     Tab.JAN;
+    in property <string>    app-version:     "";
     in property <string>    profile-name:    "Default";
     in property <string>    sync-status:     "local";
     in property <string>    currency:        "CHF";
@@ -287,7 +288,7 @@ export component AppWindow inherits Window {
                         spacing: 8px;
 
                         Text {
-                            text: "Oxycash";
+                            text: "Oxycash " + app-version;
                             font-size: 20px + Palette.font-offset;
                             font-weight: 700;
                             color: Palette.text;
