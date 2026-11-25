@@ -38,8 +38,6 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 # Roadmap
 
 ## 🟢 IN PROGRESS
-- feat: 
-  - Add option to disable tabs
 - chore:
   - Replace unmaintained crates with maintained alternatives
   - Add deny.toml
