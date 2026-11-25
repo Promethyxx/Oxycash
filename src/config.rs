@@ -2,7 +2,6 @@
 // Profile & Config structs, file-system paths, config I/O, local backup, slugify.
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
-use chrono;
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 // A profile is just a named data slot. DAV credentials are global (in Config).
@@ -219,7 +218,7 @@ pub fn slugify(name: &str) -> String {
 // ── Local backup ──────────────────────────────────────────────────────────────
 
 fn ts_filename() -> String {
-    chrono::Local::now().format("%Y-%m-%d_%H%M%S").to_string()
+    jiff::Zoned::now().strftime("%Y-%m-%d_%H%M%S").to_string()
 }
 
 pub fn backup_local(cfg: &Config, slug: &str, json: &str) {

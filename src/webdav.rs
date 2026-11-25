@@ -66,7 +66,7 @@ pub fn auth_header(user: &str, pw: &str) -> String {
 
 pub fn log_dav(cfg: &Config, msg: &str) {
     let path = base_dir(cfg).join("dav.log");
-    let ts   = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let ts   = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
     let line = format!("[{}] {}\n", ts, msg);
     let _ = std::fs::create_dir_all(base_dir(cfg));
     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
@@ -250,7 +250,7 @@ pub fn dav_delete(dp: &DavProfile, url: &str, cfg: &Config) -> bool {
 
 pub fn dav_backup_upload(dp: &DavProfile, json: &str, cfg: &Config) {
     let base = match dir_url(dp) { Some(u) => u, None => return };
-    let ts   = chrono::Local::now().format("%Y-%m-%d_%H%M%S").to_string();
+    let ts   = jiff::Zoned::now().strftime("%Y-%m-%d_%H%M%S").to_string();
     let url  = format!("{}backup/oxycash_{}_{}.json", base, dp.slug, ts);
     let auth = auth_header(&dp.dav_user, &dp.dav_pass);
     if let Ok(client) = make_client() {

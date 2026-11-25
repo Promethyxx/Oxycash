@@ -1,6 +1,5 @@
 // oxycash-rs - model.rs
 // Direct mapping of core/model.py
-use chrono::{Datelike, Local};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -392,17 +391,17 @@ pub fn apply_recurring(data: &mut AppData) {
 
 // --- Current month detection
 pub fn detect_budget_month() -> &'static str {
-    let now = Local::now();
+    let now = jiff::Zoned::now();
     let mi = if now.day() < 25 {
-        (now.month0() as i32 - 1).rem_euclid(12) as usize
+        (now.month() as i32 - 2).rem_euclid(12) as usize
     } else {
-        now.month0() as usize
+        (now.month() - 1) as usize
     };
     MONTHS[mi]
 }
 
 pub fn new_debt_id(salt: usize) -> String {
-    format!("d{}x{}", Local::now().timestamp_millis(), salt)
+    format!("d{}x{}", jiff::Timestamp::now().as_millisecond(), salt)
 }
 
 // --- Formatting
@@ -421,7 +420,7 @@ pub fn fmt_sign(n: f64) -> String {
 }
 
 pub fn today() -> String {
-    Local::now().format("%Y-%m-%d").to_string()
+    jiff::Zoned::now().strftime("%Y-%m-%d").to_string()
 }
 
 // --- Partial export / import (debts, savings)
