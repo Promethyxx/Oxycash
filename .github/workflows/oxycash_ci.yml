@@ -158,8 +158,8 @@ jobs:
       uses: android-actions/setup-android@v4
     - name: Install Android NDK and Platform
       run: |
-        sdkmanager "ndk;29.0.14206865" "platforms;android-37.0"
-        echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.14206865" >> $GITHUB_ENV
+        sdkmanager "ndk;30.0.14904198" "platforms;android-37.0"
+        echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/30.0.14904198" >> $GITHUB_ENV
         ln -sf $ANDROID_SDK_ROOT/platforms/android-37.0 $ANDROID_SDK_ROOT/platforms/android-37
     - name: Setup keystore
       env:
