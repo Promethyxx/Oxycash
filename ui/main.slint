@@ -188,6 +188,11 @@ export component AppWindow inherits Window {
     in-out property <bool>      settings-dav2-enabled: false;
 
     in-out property <string>    settings-currency-edit: "CHF";
+    in-out property <bool>      show-debts: true;
+    in-out property <bool>      show-savings: true;
+    in-out property <bool>      show-expenses: true;
+    in-out property <bool>      show-viability: true;
+    in-out property <bool>      show-charts: true;
 
     callback tab-changed(Tab);
     callback save-requested();
@@ -251,6 +256,7 @@ export component AppWindow inherits Window {
     callback set-backup-local(bool);
     callback set-backup-webdav(bool);
     callback set-data-dir(string);
+    callback set-tab-visible(string, bool);
 
     VerticalLayout {
         spacing: 0px;
@@ -372,11 +378,11 @@ export component AppWindow inherits Window {
                         TabButton { label: I18n.nov; active: current-tab == Tab.NOV; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.NOV); } }
                         TabButton { label: I18n.dec; active: current-tab == Tab.DEC; special: false; active-color: Palette.gold; clicked => { root.tab-changed(Tab.DEC); } }
 
-                        TabButton { label: I18n.tab-debts;     active: current-tab == Tab.Debts;     special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Debts); } }
-                        TabButton { label: I18n.tab-savings;   active: current-tab == Tab.Savings;   special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Savings); } }
-                        TabButton { label: I18n.tab-expenses;  active: current-tab == Tab.Expenses;  special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Expenses); } }
-                        TabButton { label: I18n.tab-viability; active: current-tab == Tab.Viability; special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Viability); } }
-                        TabButton { label: I18n.tab-charts;    active: current-tab == Tab.Charts;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Charts); } }
+                        if show-debts : TabButton { label: I18n.tab-debts;     active: current-tab == Tab.Debts;     special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Debts); } }
+                        if show-savings : TabButton { label: I18n.tab-savings;   active: current-tab == Tab.Savings;   special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Savings); } }
+                        if show-expenses : TabButton { label: I18n.tab-expenses;  active: current-tab == Tab.Expenses;  special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Expenses); } }
+                        if show-viability : TabButton { label: I18n.tab-viability; active: current-tab == Tab.Viability; special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Viability); } }
+                        if show-charts : TabButton { label: I18n.tab-charts;    active: current-tab == Tab.Charts;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Charts); } }
                         TabButton { label: I18n.tab-config;    active: current-tab == Tab.Config;    special: true; active-color: Palette.teal; clicked => { root.tab-changed(Tab.Config); } }
                     }
                 }
@@ -534,6 +540,12 @@ export component AppWindow inherits Window {
                 set-backup-local(v)  => { root.set-backup-local(v); }
                 set-backup-webdav(v) => { root.set-backup-webdav(v); }
                 set-data-dir(p)      => { root.set-data-dir(p); }
+                show-debts <=> root.show-debts;
+                show-savings <=> root.show-savings;
+                show-expenses <=> root.show-expenses;
+                show-viability <=> root.show-viability;
+                show-charts <=> root.show-charts;
+                set-tab-visible(n, v) => { root.set-tab-visible(n, v); }
             }
         }
     }

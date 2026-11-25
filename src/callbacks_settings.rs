@@ -430,6 +430,22 @@ pub fn register(window: &AppWindow, state: &Arc<Mutex<AppState>>) {
         });
     }
 
+    {
+        let state_ref = state.clone();
+        window.on_set_tab_visible(move |name, val| {
+            let mut st = state_ref.lock().unwrap();
+            match name.as_str() {
+                "debts" => st.storage.cfg.show_debts = val,
+                "savings" => st.storage.cfg.show_savings = val,
+                "expenses" => st.storage.cfg.show_expenses = val,
+                "viability" => st.storage.cfg.show_viability = val,
+                "charts" => st.storage.cfg.show_charts = val,
+                _ => return,
+            }
+            save_config(&st.storage.cfg);
+        });
+    }
+
     // ── Export / Import / Reset ───────────────────────────────────────────────
 
     {

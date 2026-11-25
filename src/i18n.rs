@@ -72,7 +72,7 @@ fn en() -> HashMap<&'static str, &'static str> {
     m.insert("charts_cumul","Annual cumulative"); m.insert("charts_exp","Exp.");
     // Config
     m.insert("cfg_title","Configuration"); m.insert("cfg_profiles","Profiles");
-    m.insert("cfg_add_profile","+ Add"); m.insert("cfg_use","Use"); m.insert("cfg_currency","Currency");
+    m.insert("cfg_add_profile","+ Add"); m.insert("cfg_use","Use"); m.insert("cfg_currency","Currency"); m.insert("cfg_tabs","Tabs");
     m.insert("cfg_theme","Theme"); m.insert("cfg_dark_to_light","Dark — switch to light");
     m.insert("cfg_light_to_dark","Light — switch to dark");
     m.insert("cfg_webdav","WebDAV (Nextcloud, kDrive…)");
@@ -149,7 +149,7 @@ fn fr() -> HashMap<&'static str, &'static str> {
     m.insert("charts_forecast","Prévision"); m.insert("charts_balance","Solde");
     m.insert("charts_cumul","Cumul annuel"); m.insert("charts_exp","Dép.");
     m.insert("cfg_title","Configuration"); m.insert("cfg_profiles","Profils");
-    m.insert("cfg_add_profile","+ Ajouter"); m.insert("cfg_use","Utiliser"); m.insert("cfg_currency","Devise");
+    m.insert("cfg_add_profile","+ Ajouter"); m.insert("cfg_use","Utiliser"); m.insert("cfg_currency","Devise"); m.insert("cfg_tabs","Onglets");
     m.insert("cfg_theme","Thème"); m.insert("cfg_dark_to_light","Sombre — passer en clair");
     m.insert("cfg_light_to_dark","Clair — passer en sombre");
     m.insert("cfg_webdav","WebDAV (Nextcloud, kDrive…)");

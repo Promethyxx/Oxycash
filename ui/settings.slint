@@ -169,6 +169,12 @@ export component SettingsView inherits Flickable {
     // Currency
     in-out property <string> currency-edit: "CHF";
 
+    in-out property <bool> show-debts: true;
+    in-out property <bool> show-savings: true;
+    in-out property <bool> show-expenses: true;
+    in-out property <bool> show-viability: true;
+    in-out property <bool> show-charts: true;
+
     // Backup
     in-out property <bool>   backup-local:   true;
     in-out property <bool>   backup-webdav:  true;
@@ -194,6 +200,7 @@ export component SettingsView inherits Flickable {
     callback set-backup-local(bool);
     callback set-backup-webdav(bool);
     callback set-data-dir(string);
+    callback set-tab-visible(string, bool);
 
     VerticalLayout {
         padding: 14px;
@@ -359,6 +366,16 @@ export component SettingsView inherits Flickable {
                     clicked => { root.save-currency(); }
                 }
             }
+        }
+
+        // ── Tabs ─────────────────────────────
+        Card {
+            title: I18n.cfg-tabs;
+            Toggle { label: I18n.tab-debts; value <=> root.show-debts; changed(v) => { root.set-tab-visible("debts", v); } }
+            Toggle { label: I18n.tab-savings; value <=> root.show-savings; changed(v) => { root.set-tab-visible("savings", v); } }
+            Toggle { label: I18n.tab-expenses; value <=> root.show-expenses; changed(v) => { root.set-tab-visible("expenses", v); } }
+            Toggle { label: I18n.tab-viability; value <=> root.show-viability; changed(v) => { root.set-tab-visible("viability", v); } }
+            Toggle { label: I18n.tab-charts; value <=> root.show-charts; changed(v) => { root.set-tab-visible("charts", v); } }
         }
 
         // ── Theme ────────────────────────────

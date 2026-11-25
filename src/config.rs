@@ -40,6 +40,11 @@ pub struct Config {
     #[serde(default)] pub dav2_user:    String,
     #[serde(default)] pub dav2_pass:    String,
     #[serde(default)] pub dav2_enabled: bool,
+    #[serde(default = "default_true")] pub show_debts: bool,
+    #[serde(default = "default_true")] pub show_savings: bool,
+    #[serde(default = "default_true")] pub show_expenses: bool,
+    #[serde(default = "default_true")] pub show_viability: bool,
+    #[serde(default = "default_true")] pub show_charts: bool,
 }
 
 fn default_slug()     -> String { "default".into() }
@@ -60,6 +65,11 @@ impl Default for Config {
             dav_url:  String::new(), dav_user:  String::new(), dav_pass:  String::new(),
             dav2_url: String::new(), dav2_user: String::new(), dav2_pass: String::new(),
             dav2_enabled: false,
+            show_debts: true,
+            show_savings: true,
+            show_expenses: true,
+            show_viability: true,
+            show_charts: true,
         }
     }
 }

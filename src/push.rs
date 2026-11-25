@@ -378,6 +378,11 @@ pub fn push_settings(window: &AppWindow, state: &AppState) {
     window.set_settings_data_dir_display(state.storage.data_dir_display().into());
     window.set_settings_backup_dir_display(state.storage.backup_dir_display().into());
     window.set_settings_data_dir_edit(cfg.data_dir.clone().into());
+    window.set_show_debts(cfg.show_debts);
+    window.set_show_savings(cfg.show_savings);
+    window.set_show_expenses(cfg.show_expenses);
+    window.set_show_viability(cfg.show_viability);
+    window.set_show_charts(cfg.show_charts);
 }
 
 // ── i18n ──────────────────────────────────────────────────────────────────────
@@ -439,7 +444,7 @@ pub fn push_i18n(window: &AppWindow, lang: &str) {
     set!(set_charts_exp,"charts_exp");
     set!(set_cfg_title,"cfg_title"); set!(set_cfg_profiles,"cfg_profiles");
     set!(set_cfg_add_profile,"cfg_add_profile"); set!(set_cfg_use,"cfg_use");
-    set!(set_cfg_currency,"cfg_currency"); set!(set_cfg_theme,"cfg_theme");
+    set!(set_cfg_currency,"cfg_currency"); set!(set_cfg_tabs,"cfg_tabs"); set!(set_cfg_theme,"cfg_theme");
     set!(set_cfg_dark_to_light,"cfg_dark_to_light"); set!(set_cfg_light_to_dark,"cfg_light_to_dark");
     set!(set_cfg_webdav,"cfg_webdav"); set!(set_cfg_url,"cfg_url");
     set!(set_cfg_user,"cfg_user"); set!(set_cfg_password,"cfg_password");
