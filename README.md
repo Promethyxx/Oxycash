@@ -38,11 +38,8 @@ This project is licensed under the GNU General Public License v3.0 — see Licen
 # Roadmap
 
 ## 🟢 IN PROGRESS
-- chore:
-  - Add deny.toml
 ## 🟡 NEXT
 - WinGet release
-
 ## 🔵 LATER
 - ci:  
   - Automate WinGet updates through CI pull requests
